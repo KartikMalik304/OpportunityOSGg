@@ -1,0 +1,6 @@
+{
+  "name": "OpportunityOS",
+  "description": "Personalized Student Opportunity & Career Intelligence Platform — Discover internships, hackathons, open-source programs, coding contests, scholarships, and research matched to your skills and eligibility.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
