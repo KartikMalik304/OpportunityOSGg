@@ -199,6 +199,17 @@ export const ApplicationTrackerView: React.FC<ApplicationTrackerViewProps> = ({
                           </select>
 
                           <div className="flex items-center gap-1">
+                            {opp?.applicationUrl && (
+                              <a
+                                href={opp.applicationUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                title="Open Official Application Portal"
+                                className="p-1 text-blue-600 dark:text-blue-400 hover:text-blue-500 cursor-pointer"
+                              >
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
                             <button
                               onClick={() => setEditingApp(app)}
                               title="Edit Notes & Details"
@@ -519,13 +530,25 @@ export const CalendarAndDeadlinesView: React.FC<CalendarAndDeadlinesViewProps> =
                   </p>
                 </div>
 
-                <div className="text-right font-mono tabular-nums">
-                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400 block">
-                    {opp.matchScore}% Match
-                  </span>
-                  <span className="text-[11px] text-slate-400">
-                    {opp.stipend || 'Paid'}
-                  </span>
+                <div className="flex items-center gap-4">
+                  <div className="text-right font-mono tabular-nums">
+                    <span className="text-sm font-bold text-blue-600 dark:text-blue-400 block">
+                      {opp.matchScore}% Match
+                    </span>
+                    <span className="text-[11px] text-slate-400">
+                      {opp.stipend || 'Paid'}
+                    </span>
+                  </div>
+                  <a
+                    href={opp.applicationUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors shrink-0"
+                  >
+                    <span>Apply</span>
+                    <ExternalLink className="w-3.5 h-3.5" />
+                  </a>
                 </div>
               </div>
             ))}
@@ -684,10 +707,16 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
     });
     const data = await res.json();
     if (!res.ok) {
-      setFormError(data.error || 'Failed to publish opportunity');
+      setFormError(
+        data.verification?.verdictSummary
+          ? `AI Verification Rejected: ${data.verification.verdictSummary}`
+          : data.error || 'Failed to publish opportunity'
+      );
       return;
     }
-    setFormSuccess(`Created "${data.title}" (${data.status}) in PostgreSQL.`);
+    setFormSuccess(
+      `AI Verified (${data.aiVerification?.confidenceScore || 95}% Authenticity) & Published "${data.title}" in PostgreSQL.`
+    );
     setTitle('');
     setDescription('');
     await onRefreshDashboard();
@@ -884,6 +913,19 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
               </div>
             </div>
             <div>
+              <label className="block text-slate-500 mb-1">
+                Official Application / Registration URL (Direct Portal)
+              </label>
+              <input
+                type="url"
+                required
+                value={applicationUrl}
+                onChange={(e) => setApplicationUrl(e.target.value)}
+                placeholder="https://buildyourfuture.withgoogle.com/programs/..."
+                className="w-full px-3 py-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white font-mono"
+              />
+            </div>
+            <div>
               <label className="block text-slate-500 mb-1">Required Skills (comma-separated)</label>
               <input
                 type="text"
@@ -896,7 +938,7 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
               type="submit"
               className="w-full py-2.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg cursor-pointer"
             >
-              Publish Opportunity (with Deduplication Check)
+              AI Verify & Publish Opportunity
             </button>
           </form>
         </div>

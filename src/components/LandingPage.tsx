@@ -11,6 +11,7 @@ import {
   Sun,
   Moon,
   ChevronDown,
+  ExternalLink,
 } from 'lucide-react';
 import heroWorkspaceImg from '../assets/images/hero_opportunity_workspace_1791094594224.jpg';
 import avatarPriyaImg from '../assets/images/avatar_student_priya_1791094608772.jpg';
@@ -38,6 +39,7 @@ const HERO_PREVIEW_CARDS = [
     difficulty: 'Intermediate',
     stipend: '₹1,25,000 / mo',
     why: 'Recommended because you know Python & React and graduate in 2027.',
+    url: 'https://buildyourfuture.withgoogle.com/programs/software-engineering-internship',
   },
   {
     title: 'Major League Hacking Global AI & Cloud Hackathon',
@@ -50,6 +52,7 @@ const HERO_PREVIEW_CARDS = [
     difficulty: 'Beginner Friendly',
     stipend: '$15,000 Prize Pool',
     why: 'Matches your full-stack repository activity and remote hackathon preference.',
+    url: 'https://mlh.io/seasons/2025/events',
   },
   {
     title: 'Google Summer of Code (GSoC) Open Source Contributor',
@@ -62,6 +65,7 @@ const HERO_PREVIEW_CARDS = [
     difficulty: 'Intermediate',
     stipend: '$3,000 – $6,600',
     why: 'Strong alignment with your 26 public GitHub repositories and TypeScript PRs.',
+    url: 'https://summerofcode.withgoogle.com/',
   },
   {
     title: 'Microsoft Imagine Cup Global Championship',
@@ -74,6 +78,7 @@ const HERO_PREVIEW_CARDS = [
     difficulty: 'Intermediate',
     stipend: '$100,000 Grand Prize',
     why: 'Your AI/ML interest and B.Tech 2027 cohort satisfy all team rules.',
+    url: 'https://imaginecup.microsoft.com/',
   },
   {
     title: 'Codeforces Global Round 32 (Div. 1 + Div. 2)',
@@ -86,6 +91,7 @@ const HERO_PREVIEW_CARDS = [
     difficulty: 'Intermediate',
     stipend: 'Rated + Prizes',
     why: 'Calibrated for your 1542 Codeforces Expert rating and algorithmic streak.',
+    url: 'https://codeforces.com/contests',
   },
   {
     title: 'Linux Foundation LFX Kubernetes Mentorship',
@@ -98,6 +104,7 @@ const HERO_PREVIEW_CARDS = [
     difficulty: 'Intermediate',
     stipend: '$4,500 Stipend',
     why: 'Matches your systems projects and open-source career goal.',
+    url: 'https://mentorship.lfx.linuxfoundation.org/',
   },
   {
     title: 'Generation Google Scholarship (Computer Science)',
@@ -110,6 +117,7 @@ const HERO_PREVIEW_CARDS = [
     difficulty: 'Intermediate',
     stipend: '$2,500 USD Award',
     why: 'Your 8.9 CGPA in B.Tech CSE exceeds the 8.0 academic requirement.',
+    url: 'https://buildyourfuture.withgoogle.com/scholarships/generation-google-scholarship-apac',
   },
 ];
 
@@ -302,8 +310,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({
                 {selectedCard.why}
               </p>
               <div className="flex flex-wrap items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span>Skills: {selectedCard.skills}</span>
-                <span>Difficulty: {selectedCard.difficulty}</span>
+                <span>Skills: {selectedCard.skills} · Difficulty: {selectedCard.difficulty}</span>
+                <a
+                  href={selectedCard.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-md transition-colors"
+                >
+                  <span>Apply on Official Portal</span>
+                  <ExternalLink className="w-3 h-3" />
+                </a>
               </div>
             </div>
 

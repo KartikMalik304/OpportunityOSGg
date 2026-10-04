@@ -55,6 +55,7 @@ import { AuthModal } from './components/AuthModal.tsx';
 import {
   QuickLogApplicationModal,
   QuickUploadResumeModal,
+  QuickSubmitOpportunityModal,
 } from './components/QuickActionModals.tsx';
 import {
   RoadmapsView,
@@ -532,6 +533,14 @@ function OpportunityCard({
             <span className="font-semibold text-slate-800 dark:text-slate-200">
               {opp.organization.name}
             </span>
+            {(opp.organization.verified || opp.source?.includes('AI Verified')) && (
+              <span
+                title="AI & Domain Verified Opportunity"
+                className="inline-flex items-center gap-1 text-[11px] font-mono font-semibold text-emerald-600 dark:text-emerald-400"
+              >
+                · ✓ AI Verified
+              </span>
+            )}
             <span aria-hidden="true">·</span>
             <span>{opp.category}</span>
             <span aria-hidden="true">·</span>
@@ -620,9 +629,28 @@ function OpportunityCard({
       {/* Action Buttons */}
       <div className="pt-3 border-t border-slate-200/80 dark:border-slate-800/80 flex flex-wrap items-center justify-between gap-2">
         <div className="flex flex-wrap items-center gap-2">
+          <a
+            href={opp.applicationUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => onQuickApply(opp)}
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors cursor-pointer whitespace-nowrap shadow-xs"
+          >
+            <span>
+              Apply Now on{' '}
+              {(() => {
+                try {
+                  return new URL(opp.applicationUrl).hostname.replace(/^www\./, '');
+                } catch {
+                  return opp.organization.name;
+                }
+              })()}
+            </span>
+            <ExternalLink className="w-3.5 h-3.5" />
+          </a>
           <button
             onClick={() => onSelect(opp)}
-            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
+            className="px-3.5 py-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors cursor-pointer whitespace-nowrap"
           >
             View Details & Eligibility
           </button>
@@ -649,9 +677,9 @@ function OpportunityCard({
           target="_blank"
           rel="noopener noreferrer"
           onClick={() => onQuickApply(opp)}
-          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
+          className="inline-flex items-center gap-1 text-xs font-mono font-semibold text-blue-600 dark:text-blue-400 hover:underline whitespace-nowrap"
         >
-          <span>Apply</span>
+          <span>Direct Form</span>
           <ExternalLink className="w-3 h-3" />
         </a>
       </div>
@@ -683,6 +711,8 @@ function WorkspaceApp() {
   const [showOnboarding, setShowOnboarding] = useState(false);
   const [showQuickLogModal, setShowQuickLogModal] = useState(false);
   const [showQuickResumeModal, setShowQuickResumeModal] = useState(false);
+  const [showSubmitOpportunityModal, setShowSubmitOpportunityModal] = useState(false);
+  const [submitOpportunityCategory, setSubmitOpportunityCategory] = useState<string>('Hackathon');
   const [floatingQuickMenuOpen, setFloatingQuickMenuOpen] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] =
     useState<EnrichedOpportunity | null>(null);
@@ -1267,6 +1297,16 @@ function WorkspaceApp() {
                         <span>Switch / Create Account</span>
                       </button>
                       <button
+                        onClick={() => {
+                          setSubmitOpportunityCategory('Hackathon');
+                          setShowSubmitOpportunityModal(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-blue-600 dark:text-blue-400 border border-blue-500/40 bg-blue-500/10 rounded-lg hover:bg-blue-500/20 cursor-pointer"
+                      >
+                        <Sparkles className="w-3.5 h-3.5" />
+                        <span>+ Add Hackathon / Internship</span>
+                      </button>
+                      <button
                         onClick={() => setShowOnboarding(true)}
                         className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer"
                       >
@@ -1329,7 +1369,7 @@ function WorkspaceApp() {
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                       {/* 1. Log a New Application */}
                       <button
                         type="button"
@@ -1393,6 +1433,31 @@ function WorkspaceApp() {
                         </div>
                         <span className="text-xs font-mono font-semibold text-amber-600 dark:text-amber-400 shrink-0">
                           Explore →
+                        </span>
+                      </button>
+
+                      {/* 4. Add Hackathon / Internship (AI Verified) */}
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSubmitOpportunityCategory('Hackathon');
+                          setShowSubmitOpportunityModal(true);
+                        }}
+                        className="group text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50/60 dark:bg-slate-950/60 transition-colors flex items-start justify-between gap-3 cursor-pointer"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              Add Hackathon / Internship
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Submit a real hackathon or internship link. AI verifies URL & authenticity before publishing (+50 XP).
+                          </p>
+                        </div>
+                        <span className="text-xs font-mono font-semibold text-blue-600 dark:text-blue-400 shrink-0">
+                          Verify →
                         </span>
                       </button>
                     </div>
@@ -1569,7 +1634,39 @@ function WorkspaceApp() {
                         </p>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const defaultCat =
+                              activeTab === 'Hackathons'
+                                ? 'Hackathon'
+                                : activeTab === 'Internships'
+                                ? 'Internship'
+                                : activeTab === 'Scholarships'
+                                ? 'Scholarship'
+                                : activeTab === 'Open Source'
+                                ? 'Open Source'
+                                : activeTab === 'Research'
+                                ? 'Research'
+                                : activeTab === 'Jobs'
+                                ? 'Job'
+                                : 'Hackathon';
+                            setSubmitOpportunityCategory(defaultCat);
+                            setShowSubmitOpportunityModal(true);
+                          }}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>
+                            + Add{' '}
+                            {activeTab === 'Hackathons'
+                              ? 'Hackathon'
+                              : activeTab === 'Internships'
+                              ? 'Internship'
+                              : 'Opportunity'}{' '}
+                            (AI Verified)
+                          </span>
+                        </button>
                         <button
                           onClick={handleSaveCurrentSearch}
                           className="px-3 py-1.5 text-xs font-medium border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
@@ -2073,6 +2170,18 @@ function WorkspaceApp() {
         />
       )}
 
+      {/* Quick Actions: Add Hackathon / Internship (AI Verified) Modal */}
+      {showSubmitOpportunityModal && bundle && (
+        <QuickSubmitOpportunityModal
+          initialCategory={submitOpportunityCategory}
+          authFetch={authFetch}
+          onClose={() => setShowSubmitOpportunityModal(false)}
+          onSuccess={async () => {
+            await fetchDashboard();
+          }}
+        />
+      )}
+
       {/* Account Sign In / Create Account Modal (Accessible in Workspace too) */}
       {authModalOpen && (
         <AuthModal
@@ -2136,6 +2245,18 @@ function WorkspaceApp() {
             >
               <Terminal className="w-4 h-4 text-amber-500 shrink-0" />
               <span>Find Hackathons</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFloatingQuickMenuOpen(false);
+                setSubmitOpportunityCategory('Hackathon');
+                setShowSubmitOpportunityModal(true);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium cursor-pointer text-left"
+            >
+              <Sparkles className="w-4 h-4 text-blue-500 shrink-0" />
+              <span>Add Hackathon / Internship (AI)</span>
             </button>
           </div>
         )}

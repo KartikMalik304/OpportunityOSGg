@@ -121,7 +121,16 @@ export const OpportunityDetailsModal: React.FC<OpportunityDetailsModalProps> = (
               onClick={() => onTrackApplication(opportunity.id, 'Applied')}
               className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors whitespace-nowrap"
             >
-              <span>Apply on Official Portal</span>
+              <span>
+                Apply Directly on{' '}
+                {(() => {
+                  try {
+                    return new URL(opportunity.applicationUrl).hostname.replace(/^www\./, '');
+                  } catch {
+                    return opportunity.organization.name;
+                  }
+                })()}
+              </span>
               <ExternalLink className="w-3.5 h-3.5" />
             </a>
 

@@ -161,7 +161,7 @@ function build120Opportunities(): SeedOppTemplate[] {
       degree: 'B.Tech, B.E., M.Tech, MS',
       minCgpa: '7.5',
       description: 'Join Google Core Systems, Cloud, or Search engineering teams for a 12-week summer internship. Build scalable distributed microservices, optimize frontend web experiences, and collaborate with senior staff engineers on production launches.',
-      url: 'https://careers.google.com/students',
+      url: 'https://buildyourfuture.withgoogle.com/programs/software-engineering-internship',
     },
     {
       title: 'Google STEP Internship (Second Year Undergraduates)',
@@ -183,7 +183,7 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2029,
       degree: 'B.Tech, B.E.',
       description: 'Student Training in Engineering Program (STEP) designed for first and second-year undergraduate computer science students with mentorship and pair-programming projects.',
-      url: 'https://careers.google.com/students',
+      url: 'https://buildyourfuture.withgoogle.com/programs/step',
     },
     {
       title: 'Microsoft Software Engineering Intern — Azure Core',
@@ -206,7 +206,7 @@ function build120Opportunities(): SeedOppTemplate[] {
       degree: 'B.Tech, M.Tech',
       minCgpa: '7.0',
       description: 'Engineer resilient cloud orchestration services, telemetry pipelines, and AI copilot developer integrations inside Microsoft Azure.',
-      url: 'https://careers.microsoft.com/students',
+      url: 'https://careers.microsoft.com/v2/global/en/students',
     },
     {
       title: 'Stripe Software Engineering Intern — Programmable Payments',
@@ -272,7 +272,7 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2028,
       degree: 'B.Tech, M.Tech, MS, PhD',
       description: 'Build evaluation harnesses, interpretability visualizations, and high-throughput inference serving systems for frontier AI models.',
-      url: 'https://www.anthropic.com/careers',
+      url: 'https://www.anthropic.com/careers/jobs',
     },
     {
       title: 'Atlassian Full-Stack Developer Intern',
@@ -317,7 +317,7 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2027,
       degree: 'B.Tech, B.E.',
       description: 'Architect high-concurrency settlement pipelines, webhook delivery queues, and fraud detection microservices in Go and PostgreSQL.',
-      url: 'https://razorpay.com/jobs',
+      url: 'https://razorpay.com/jobs/',
     },
     {
       title: 'NVIDIA Deep Learning & TensorRT Intern',
@@ -339,7 +339,7 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2028,
       degree: 'B.Tech, M.Tech',
       description: 'Optimize neural network kernel execution, quantization pipelines, and LLM inference latency on NVIDIA Hopper & Blackwell architectures.',
-      url: 'https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting',
+      url: 'https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting/',
     },
     {
       title: 'Goldman Sachs Summer Analyst — Core Engineering',
@@ -361,7 +361,7 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2027,
       degree: 'B.Tech, B.E.',
       description: 'Build quantitative risk analytics, low-latency algorithmic execution platforms, and financial data lakes.',
-      url: 'https://www.goldmansachs.com/careers/students',
+      url: 'https://www.goldmansachs.com/careers/students/programs-and-internships',
     },
     {
       title: 'Adobe Research & Creative Cloud Engineering Intern',
@@ -405,30 +405,30 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2028,
       degree: 'B.Tech, B.E., MS',
       description: 'Ensure reliability, scalability, and performance of Meta’s global container fleet and AI training clusters.',
-      url: 'https://www.metacareers.com/students',
+      url: 'https://www.metacareers.com/careerprograms/students',
     },
   ];
 
   // Add 18 more varied Internships to reach 30 Internships
-  const extraInternships: Array<Partial<SeedOppTemplate> & { title: string; org: string; skills: string[]; daysOffset: number }> = [
-    { title: 'OpenAI Applied AI Engineering Intern', org: 'OpenAI', skills: ['Python', 'TypeScript', 'React', 'LLMs', 'RAG'], daysOffset: 11, stipend: '$7,800 / month', remote: true, workMode: 'Remote', location: 'Remote / San Francisco' },
-    { title: 'Linux Foundation Cloud Tooling Intern', org: 'Linux Foundation', skills: ['Go', 'Docker', 'Kubernetes', 'Linux'], daysOffset: 16, stipend: '$3,000 Stipend', remote: true, workMode: 'Remote', location: 'Remote (Global)', beginnerFriendly: true, difficulty: 'Beginner' },
-    { title: 'CNCF Prometheus Telemetry Engineering Intern', org: 'Cloud Native Computing Foundation', skills: ['Go', 'TypeScript', 'React', 'Kubernetes'], daysOffset: 22, stipend: '$3,000 Stipend', remote: true, workMode: 'Remote', location: 'Remote (Global)' },
-    { title: 'Google Research India AI/ML Winter Intern', org: 'Google', skills: ['Python', 'PyTorch', 'NLP', 'Deep Learning'], daysOffset: 25, stipend: '₹1,20,000 / month', remote: false, workMode: 'Hybrid', location: 'Bengaluru, India' },
-    { title: 'Microsoft Explore Internship (First & Second Year)', org: 'Microsoft', skills: ['Python', 'JavaScript', 'HTML', 'CSS'], daysOffset: 13, stipend: '₹85,000 / month', remote: false, workMode: 'Hybrid', location: 'Hyderabad, India', beginnerFriendly: true, difficulty: 'Beginner', gradMin: 2028, gradMax: 2029 },
-    { title: 'Stripe Data Science & Fraud ML Intern', org: 'Stripe', skills: ['Python', 'SQL', 'Pandas', 'Machine Learning'], daysOffset: 18, stipend: '₹1,35,000 / month', remote: true, workMode: 'Remote', location: 'Remote / Bengaluru' },
-    { title: 'Vercel Design Engineering & UI Systems Intern', org: 'Vercel', skills: ['React', 'Next.js', 'Tailwind CSS', 'TypeScript'], daysOffset: 2, stipend: '$5,200 / month', remote: true, workMode: 'Remote', location: 'Remote (Global)', beginnerFriendly: true, difficulty: 'Beginner' },
-    { title: 'Razorpay Frontend Design Systems Intern', org: 'Razorpay', skills: ['React', 'TypeScript', 'CSS', 'JavaScript'], daysOffset: 7, stipend: '₹65,000 / month', remote: true, workMode: 'Remote', location: 'Bengaluru / Remote', beginnerFriendly: true, difficulty: 'Beginner' },
-    { title: 'Atlassian Cloud Security & DevSecOps Intern', org: 'Atlassian', skills: ['Python', 'AWS', 'Docker', 'GitHub Actions'], daysOffset: 24, stipend: '₹1,25,000 / month', remote: true, workMode: 'Remote', location: 'Remote (India)' },
-    { title: 'NVIDIA Autonomous Vehicles Perception Intern', org: 'NVIDIA', skills: ['C++', 'Python', 'Computer Vision', 'PyTorch'], daysOffset: 28, stipend: '₹95,000 / month', remote: false, workMode: 'On-site', location: 'Pune, India', difficulty: 'Advanced' },
-    { title: 'Adobe Document Cloud Full-Stack Intern', org: 'Adobe', skills: ['TypeScript', 'React', 'Node.js', 'REST APIs'], daysOffset: 10, stipend: '₹95,000 / month', remote: false, workMode: 'Hybrid', location: 'Bengaluru, India' },
-    { title: 'Meta PyTorch Core Compiler Intern', org: 'Meta', skills: ['C++', 'Python', 'PyTorch', 'Deep Learning'], daysOffset: 31, stipend: '$6,800 / month', remote: true, workMode: 'Remote', location: 'Remote / Menlo Park', difficulty: 'Advanced' },
-    { title: 'Goldman Sachs Quantitative Strategies Intern', org: 'Goldman Sachs', skills: ['Python', 'C++', 'NumPy', 'Pandas', 'Algorithms'], daysOffset: 20, stipend: '₹1,10,000 / month', remote: false, workMode: 'On-site', location: 'Bengaluru, India' },
-    { title: 'MLH Production Engineering Intern Cohort', org: 'Major League Hacking', skills: ['Python', 'Linux', 'Docker', 'Bash', 'Git'], daysOffset: 9, stipend: '$5,000 Stipend', remote: true, workMode: 'Remote', location: 'Remote (Global)', beginnerFriendly: true },
-    { title: 'ETHGlobal Protocol Engineering Intern', org: 'ETHGlobal', skills: ['TypeScript', 'Rust', 'Node.js', 'PostgreSQL'], daysOffset: 27, stipend: '$4,500 / month', remote: true, workMode: 'Remote', location: 'Remote (Global)' },
-    { title: 'Outreachy Mozilla Web Platform Intern', org: 'Outreachy', skills: ['JavaScript', 'C++', 'Rust', 'HTML', 'CSS'], daysOffset: 14, stipend: '$7,000 Total Stipend', remote: true, workMode: 'Remote', location: 'Remote (Global)', beginnerFriendly: true, difficulty: 'Beginner' },
-    { title: 'CERN Openlab Data Pipeline Summer Intern', org: 'CERN', skills: ['Python', 'C++', 'SQL', 'Spark', 'Linux'], daysOffset: 23, stipend: 'CHF 3,300 / month', remote: false, workMode: 'On-site', location: 'Geneva, Switzerland' },
-    { title: 'Stanford AI Lab Open-Source LLM Tooling Intern', org: 'Stanford AI Lab', skills: ['Python', 'PyTorch', 'LLMs', 'RAG'], daysOffset: 19, stipend: '$4,200 / month', remote: true, workMode: 'Remote', location: 'Remote (Global)' },
+  const extraInternships: Array<Partial<SeedOppTemplate> & { title: string; org: string; skills: string[]; daysOffset: number; url: string }> = [
+    { title: 'OpenAI Applied AI Engineering Intern', org: 'OpenAI', skills: ['Python', 'TypeScript', 'React', 'LLMs', 'RAG'], daysOffset: 11, stipend: '$7,800 / month', remote: true, workMode: 'Remote', location: 'Remote / San Francisco', url: 'https://openai.com/careers/search/' },
+    { title: 'Linux Foundation Cloud Tooling Intern', org: 'Linux Foundation', skills: ['Go', 'Docker', 'Kubernetes', 'Linux'], daysOffset: 16, stipend: '$3,000 Stipend', remote: true, workMode: 'Remote', location: 'Remote (Global)', beginnerFriendly: true, difficulty: 'Beginner', url: 'https://mentorship.lfx.linuxfoundation.org/' },
+    { title: 'CNCF Prometheus Telemetry Engineering Intern', org: 'Cloud Native Computing Foundation', skills: ['Go', 'TypeScript', 'React', 'Kubernetes'], daysOffset: 22, stipend: '$3,000 Stipend', remote: true, workMode: 'Remote', location: 'Remote (Global)', url: 'https://github.com/cncf/mentoring' },
+    { title: 'Google Research India AI/ML Winter Intern', org: 'Google', skills: ['Python', 'PyTorch', 'NLP', 'Deep Learning'], daysOffset: 25, stipend: '₹1,20,000 / month', remote: false, workMode: 'Hybrid', location: 'Bengaluru, India', url: 'https://research.google/careers/' },
+    { title: 'Microsoft Explore Internship (First & Second Year)', org: 'Microsoft', skills: ['Python', 'JavaScript', 'HTML', 'CSS'], daysOffset: 13, stipend: '₹85,000 / month', remote: false, workMode: 'Hybrid', location: 'Hyderabad, India', beginnerFriendly: true, difficulty: 'Beginner', gradMin: 2028, gradMax: 2029, url: 'https://careers.microsoft.com/v2/global/en/exploremicrosoft' },
+    { title: 'Stripe Data Science & Fraud ML Intern', org: 'Stripe', skills: ['Python', 'SQL', 'Pandas', 'Machine Learning'], daysOffset: 18, stipend: '₹1,35,000 / month', remote: true, workMode: 'Remote', location: 'Remote / Bengaluru', url: 'https://stripe.com/jobs/university' },
+    { title: 'Vercel Design Engineering & UI Systems Intern', org: 'Vercel', skills: ['React', 'Next.js', 'Tailwind CSS', 'TypeScript'], daysOffset: 2, stipend: '$5,200 / month', remote: true, workMode: 'Remote', location: 'Remote (Global)', beginnerFriendly: true, difficulty: 'Beginner', url: 'https://vercel.com/careers' },
+    { title: 'Razorpay Frontend Design Systems Intern', org: 'Razorpay', skills: ['React', 'TypeScript', 'CSS', 'JavaScript'], daysOffset: 7, stipend: '₹65,000 / month', remote: true, workMode: 'Remote', location: 'Bengaluru / Remote', beginnerFriendly: true, difficulty: 'Beginner', url: 'https://razorpay.com/jobs/' },
+    { title: 'Atlassian Cloud Security & DevSecOps Intern', org: 'Atlassian', skills: ['Python', 'AWS', 'Docker', 'GitHub Actions'], daysOffset: 24, stipend: '₹1,25,000 / month', remote: true, workMode: 'Remote', location: 'Remote (India)', url: 'https://www.atlassian.com/company/careers/graduates' },
+    { title: 'NVIDIA Autonomous Vehicles Perception Intern', org: 'NVIDIA', skills: ['C++', 'Python', 'Computer Vision', 'PyTorch'], daysOffset: 28, stipend: '₹95,000 / month', remote: false, workMode: 'On-site', location: 'Pune, India', difficulty: 'Advanced', url: 'https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting/' },
+    { title: 'Adobe Document Cloud Full-Stack Intern', org: 'Adobe', skills: ['TypeScript', 'React', 'Node.js', 'REST APIs'], daysOffset: 10, stipend: '₹95,000 / month', remote: false, workMode: 'Hybrid', location: 'Bengaluru, India', url: 'https://www.adobe.com/careers/university.html' },
+    { title: 'Meta PyTorch Core Compiler Intern', org: 'Meta', skills: ['C++', 'Python', 'PyTorch', 'Deep Learning'], daysOffset: 31, stipend: '$6,800 / month', remote: true, workMode: 'Remote', location: 'Remote / Menlo Park', difficulty: 'Advanced', url: 'https://www.metacareers.com/careerprograms/students' },
+    { title: 'Goldman Sachs Quantitative Strategies Intern', org: 'Goldman Sachs', skills: ['Python', 'C++', 'NumPy', 'Pandas', 'Algorithms'], daysOffset: 20, stipend: '₹1,10,000 / month', remote: false, workMode: 'On-site', location: 'Bengaluru, India', url: 'https://www.goldmansachs.com/careers/students/programs-and-internships' },
+    { title: 'MLH Production Engineering Intern Cohort', org: 'Major League Hacking', skills: ['Python', 'Linux', 'Docker', 'Bash', 'Git'], daysOffset: 9, stipend: '$5,000 Stipend', remote: true, workMode: 'Remote', location: 'Remote (Global)', beginnerFriendly: true, url: 'https://fellowship.mlh.io/programs/production-engineering' },
+    { title: 'ETHGlobal Protocol Engineering Intern', org: 'ETHGlobal', skills: ['TypeScript', 'Rust', 'Node.js', 'PostgreSQL'], daysOffset: 27, stipend: '$4,500 / month', remote: true, workMode: 'Remote', location: 'Remote (Global)', url: 'https://ethglobal.com/careers' },
+    { title: 'Outreachy Mozilla Web Platform Intern', org: 'Outreachy', skills: ['JavaScript', 'C++', 'Rust', 'HTML', 'CSS'], daysOffset: 14, stipend: '$7,000 Total Stipend', remote: true, workMode: 'Remote', location: 'Remote (Global)', beginnerFriendly: true, difficulty: 'Beginner', url: 'https://www.outreachy.org/apply/' },
+    { title: 'CERN Openlab Data Pipeline Summer Intern', org: 'CERN', skills: ['Python', 'C++', 'SQL', 'Spark', 'Linux'], daysOffset: 23, stipend: 'CHF 3,300 / month', remote: false, workMode: 'On-site', location: 'Geneva, Switzerland', url: 'https://openlab.cern/education' },
+    { title: 'Stanford AI Lab Open-Source LLM Tooling Intern', org: 'Stanford AI Lab', skills: ['Python', 'PyTorch', 'LLMs', 'RAG'], daysOffset: 19, stipend: '$4,200 / month', remote: true, workMode: 'Remote', location: 'Remote (Global)', url: 'https://ai.stanford.edu/academic-programs/' },
   ];
 
   list.push(...internships);
@@ -453,32 +453,32 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: item.gradMax || 2028,
       degree: 'B.Tech, B.E., M.Tech, B.Sc',
       description: `Hands-on engineering internship at ${item.org} building production systems with ${item.skills.join(', ')}. Includes 1:1 mentorship, code reviews, and full-time conversion consideration.`,
-      url: 'https://careers.google.com',
+      url: item.url,
     });
   }
 
   // 2. 20 HACKATHONS
   const hackathonsData = [
-    { title: 'Microsoft Imagine Cup Global Student Championship 2027', org: 'Microsoft', skills: ['Python', 'Generative AI', 'Azure', 'React', 'Next.js'], daysOffset: 8, stipend: '$100,000 Grand Prize + Mentorship', remote: true, beginnerFriendly: true, featured: true, location: 'Global Online' },
-    { title: 'Major League Hacking (MLH) Global Hack Week: AI & Cloud', org: 'Major League Hacking', skills: ['Python', 'JavaScript', 'React', 'Git', 'Docker'], daysOffset: 3, stipend: '$15,000 Prizes + Swag', remote: true, beginnerFriendly: true, featured: true, location: 'Global Online' },
-    { title: 'ETHGlobal Autonomous Agents & Zero-Knowledge Hackathon', org: 'ETHGlobal', skills: ['TypeScript', 'Rust', 'Next.js', 'LLMs'], daysOffset: 11, stipend: '$250,000 Prize Pool', remote: true, beginnerFriendly: false, featured: true, location: 'Global Online / Hybrid' },
-    { title: 'Google Cloud Vertex AI & Gemini Developer Hackathon', org: 'Google', skills: ['Python', 'TypeScript', 'Generative AI', 'GCP', 'React'], daysOffset: 6, stipend: '$50,000 Prize Pool', remote: true, beginnerFriendly: true, featured: true, location: 'Global Online' },
-    { title: 'Vercel Next.js Global Ship-It Hackathon', org: 'Vercel', skills: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS'], daysOffset: 14, stipend: '$40,000 + Vercel Pro Credits', remote: true, beginnerFriendly: true, featured: false, location: 'Remote (Global)' },
-    { title: 'Anthropic Claude MCP & Agentic Workflows Buildathon', org: 'Anthropic', skills: ['Python', 'TypeScript', 'LLMs', 'RAG', 'Node.js'], daysOffset: 9, stipend: '$35,000 + API Credits', remote: true, beginnerFriendly: false, featured: true, location: 'Remote (Global)' },
-    { title: 'Razorpay FinTech & UPI 3.0 Product Hackathon', org: 'Razorpay', skills: ['Node.js', 'Go', 'React', 'PostgreSQL', 'REST APIs'], daysOffset: 5, stipend: '₹10,00,000 Prize Pool + PPIs', remote: false, beginnerFriendly: false, featured: false, location: 'Bengaluru / Hybrid' },
-    { title: 'Atlassian Forge Developer App Hackathon', org: 'Atlassian', skills: ['TypeScript', 'React', 'Node.js', 'GraphQL'], daysOffset: 18, stipend: '$30,000 Prize Pool', remote: true, beginnerFriendly: true, featured: false, location: 'Global Online' },
-    { title: 'NVIDIA CUDA & Edge AI Robotics Hackathon', org: 'NVIDIA', skills: ['Python', 'C++', 'Computer Vision', 'PyTorch'], daysOffset: 21, stipend: '$25,000 + RTX GPUs', remote: true, beginnerFriendly: false, featured: false, location: 'Global Online' },
-    { title: 'Stripe Internet Economy & Autonomous Billing Hackathon', org: 'Stripe', skills: ['TypeScript', 'React', 'Node.js', 'SQL'], daysOffset: 16, stipend: '$20,000 Prize Pool', remote: true, beginnerFriendly: true, featured: false, location: 'Remote (Global)' },
-    { title: 'Meta Llama Open-Source Impact Challenge', org: 'Meta', skills: ['Python', 'LLMs', 'RAG', 'PyTorch', 'React'], daysOffset: 12, stipend: '$60,000 Total Grants', remote: true, beginnerFriendly: true, featured: false, location: 'Remote (Global)' },
-    { title: 'CNCF Cloud Native Kubernetes Operators Hackathon', org: 'Cloud Native Computing Foundation', skills: ['Go', 'Kubernetes', 'Docker', 'Linux'], daysOffset: 24, stipend: '$12,000 + KubeCon Passes', remote: true, beginnerFriendly: false, featured: false, location: 'Global Online' },
-    { title: 'Adobe Creative GenAI & WebAssembly Hack', org: 'Adobe', skills: ['JavaScript', 'TypeScript', 'React', 'Generative AI'], daysOffset: 7, stipend: '₹6,00,000 + Pre-Placement Interviews', remote: true, beginnerFriendly: true, featured: false, location: 'India Online' },
-    { title: 'CERN Particle Physics & Open Data Challenge', org: 'CERN', skills: ['Python', 'Pandas', 'NumPy', 'Machine Learning'], daysOffset: 29, stipend: 'CERN Geneva Study Visit', remote: true, beginnerFriendly: true, featured: false, location: 'Global Online' },
-    { title: 'Stanford TreeHacks Open Track Challenge', org: 'Stanford AI Lab', skills: ['Python', 'React', 'TypeScript', 'Machine Learning'], daysOffset: 32, stipend: '$75,000 in Prizes', remote: false, beginnerFriendly: true, featured: false, location: 'Stanford, CA / Hybrid' },
-    { title: 'OpenAI Reasoning & Multi-Modal Agents Hackathon', org: 'OpenAI', skills: ['Python', 'TypeScript', 'LLMs', 'Next.js'], daysOffset: 13, stipend: '$50,000 + Compute Credits', remote: true, beginnerFriendly: false, featured: false, location: 'Remote (Global)' },
-    { title: 'Linux Foundation Open Source Security (OpenSSF) Hack', org: 'Linux Foundation', skills: ['Python', 'Go', 'Rust', 'GitHub Actions'], daysOffset: 20, stipend: '$15,000 Bounties', remote: true, beginnerFriendly: false, featured: false, location: 'Global Online' },
-    { title: 'Goldman Sachs India Engineering Campus Hackathon', org: 'Goldman Sachs', skills: ['Java', 'Python', 'Data Structures', 'Algorithms'], daysOffset: 4, stipend: '₹5,00,000 + Summer Intern Offers', remote: true, beginnerFriendly: false, featured: false, location: 'India Online' },
-    { title: 'MLH First-Timers Weekend Buildathon', org: 'Major League Hacking', skills: ['HTML', 'CSS', 'JavaScript', 'React', 'Git'], daysOffset: 2, stipend: '$5,000 Beginner Prizes', remote: true, beginnerFriendly: true, featured: false, location: 'Global Online' },
-    { title: 'Outreachy Open-Source Documentation & Tooling Sprint', org: 'Outreachy', skills: ['Git', 'Python', 'JavaScript', 'HTML'], daysOffset: 15, stipend: '$3,000 Community Grants', remote: true, beginnerFriendly: true, featured: false, location: 'Global Online' },
+    { title: 'Microsoft Imagine Cup Global Student Championship 2027', org: 'Microsoft', skills: ['Python', 'Generative AI', 'Azure', 'React', 'Next.js'], daysOffset: 8, stipend: '$100,000 Grand Prize + Mentorship', remote: true, beginnerFriendly: true, featured: true, location: 'Global Online', url: 'https://imaginecup.microsoft.com/' },
+    { title: 'Major League Hacking (MLH) Global Hack Week: AI & Cloud', org: 'Major League Hacking', skills: ['Python', 'JavaScript', 'React', 'Git', 'Docker'], daysOffset: 3, stipend: '$15,000 Prizes + Swag', remote: true, beginnerFriendly: true, featured: true, location: 'Global Online', url: 'https://ghw.mlh.io/' },
+    { title: 'ETHGlobal Autonomous Agents & Zero-Knowledge Hackathon', org: 'ETHGlobal', skills: ['TypeScript', 'Rust', 'Next.js', 'LLMs'], daysOffset: 11, stipend: '$250,000 Prize Pool', remote: true, beginnerFriendly: false, featured: true, location: 'Global Online / Hybrid', url: 'https://ethglobal.com/events' },
+    { title: 'Google Cloud Vertex AI & Gemini Developer Hackathon', org: 'Google', skills: ['Python', 'TypeScript', 'Generative AI', 'GCP', 'React'], daysOffset: 6, stipend: '$50,000 Prize Pool', remote: true, beginnerFriendly: true, featured: true, location: 'Global Online', url: 'https://googlecloud.devpost.com/' },
+    { title: 'Vercel Next.js Global Ship-It Hackathon', org: 'Vercel', skills: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS'], daysOffset: 14, stipend: '$40,000 + Vercel Pro Credits', remote: true, beginnerFriendly: true, featured: false, location: 'Remote (Global)', url: 'https://nextjs.org/conf' },
+    { title: 'Anthropic Claude MCP & Agentic Workflows Buildathon', org: 'Anthropic', skills: ['Python', 'TypeScript', 'LLMs', 'RAG', 'Node.js'], daysOffset: 9, stipend: '$35,000 + API Credits', remote: true, beginnerFriendly: false, featured: true, location: 'Remote (Global)', url: 'https://www.anthropic.com/news' },
+    { title: 'Razorpay FinTech & UPI 3.0 Product Hackathon', org: 'Razorpay', skills: ['Node.js', 'Go', 'React', 'PostgreSQL', 'REST APIs'], daysOffset: 5, stipend: '₹10,00,000 Prize Pool + PPIs', remote: false, beginnerFriendly: false, featured: false, location: 'Bengaluru / Hybrid', url: 'https://razorpay.com/ftx/' },
+    { title: 'Atlassian Forge Developer App Hackathon', org: 'Atlassian', skills: ['TypeScript', 'React', 'Node.js', 'GraphQL'], daysOffset: 18, stipend: '$30,000 Prize Pool', remote: true, beginnerFriendly: true, featured: false, location: 'Global Online', url: 'https://codegeist.devpost.com/' },
+    { title: 'NVIDIA CUDA & Edge AI Robotics Hackathon', org: 'NVIDIA', skills: ['Python', 'C++', 'Computer Vision', 'PyTorch'], daysOffset: 21, stipend: '$25,000 + RTX GPUs', remote: true, beginnerFriendly: false, featured: false, location: 'Global Online', url: 'https://www.nvidia.com/en-us/events/open-hackathons/' },
+    { title: 'Stripe Internet Economy & Autonomous Billing Hackathon', org: 'Stripe', skills: ['TypeScript', 'React', 'Node.js', 'SQL'], daysOffset: 16, stipend: '$20,000 Prize Pool', remote: true, beginnerFriendly: true, featured: false, location: 'Remote (Global)', url: 'https://stripe.dev/' },
+    { title: 'Meta Llama Open-Source Impact Challenge', org: 'Meta', skills: ['Python', 'LLMs', 'RAG', 'PyTorch', 'React'], daysOffset: 12, stipend: '$60,000 Total Grants', remote: true, beginnerFriendly: true, featured: false, location: 'Remote (Global)', url: 'https://ai.meta.com/llama/' },
+    { title: 'CNCF Cloud Native Kubernetes Operators Hackathon', org: 'Cloud Native Computing Foundation', skills: ['Go', 'Kubernetes', 'Docker', 'Linux'], daysOffset: 24, stipend: '$12,000 + KubeCon Passes', remote: true, beginnerFriendly: false, featured: false, location: 'Global Online', url: 'https://events.linuxfoundation.org/' },
+    { title: 'Adobe Creative GenAI & WebAssembly Hack', org: 'Adobe', skills: ['JavaScript', 'TypeScript', 'React', 'Generative AI'], daysOffset: 7, stipend: '₹6,00,000 + Pre-Placement Interviews', remote: true, beginnerFriendly: true, featured: false, location: 'India Online', url: 'https://developer.adobe.com/' },
+    { title: 'CERN Particle Physics & Open Data Challenge', org: 'CERN', skills: ['Python', 'Pandas', 'NumPy', 'Machine Learning'], daysOffset: 29, stipend: 'CERN Geneva Study Visit', remote: true, beginnerFriendly: true, featured: false, location: 'Global Online', url: 'https://webfest.cern/' },
+    { title: 'Stanford TreeHacks Open Track Challenge', org: 'Stanford AI Lab', skills: ['Python', 'React', 'TypeScript', 'Machine Learning'], daysOffset: 32, stipend: '$75,000 in Prizes', remote: false, beginnerFriendly: true, featured: false, location: 'Stanford, CA / Hybrid', url: 'https://www.treehacks.com/' },
+    { title: 'OpenAI Reasoning & Multi-Modal Agents Hackathon', org: 'OpenAI', skills: ['Python', 'TypeScript', 'LLMs', 'Next.js'], daysOffset: 13, stipend: '$50,000 + Compute Credits', remote: true, beginnerFriendly: false, featured: false, location: 'Remote (Global)', url: 'https://openai.com/devday/' },
+    { title: 'Linux Foundation Open Source Security (OpenSSF) Hack', org: 'Linux Foundation', skills: ['Python', 'Go', 'Rust', 'GitHub Actions'], daysOffset: 20, stipend: '$15,000 Bounties', remote: true, beginnerFriendly: false, featured: false, location: 'Global Online', url: 'https://openssf.org/' },
+    { title: 'Goldman Sachs India Engineering Campus Hackathon', org: 'Goldman Sachs', skills: ['Java', 'Python', 'Data Structures', 'Algorithms'], daysOffset: 4, stipend: '₹5,00,000 + Summer Intern Offers', remote: true, beginnerFriendly: false, featured: false, location: 'India Online', url: 'https://www.goldmansachs.com/careers/students' },
+    { title: 'MLH First-Timers Weekend Buildathon', org: 'Major League Hacking', skills: ['HTML', 'CSS', 'JavaScript', 'React', 'Git'], daysOffset: 2, stipend: '$5,000 Beginner Prizes', remote: true, beginnerFriendly: true, featured: false, location: 'Global Online', url: 'https://mlh.io/seasons/2026/events' },
+    { title: 'Outreachy Open-Source Documentation & Tooling Sprint', org: 'Outreachy', skills: ['Git', 'Python', 'JavaScript', 'HTML'], daysOffset: 15, stipend: '$3,000 Community Grants', remote: true, beginnerFriendly: true, featured: false, location: 'Global Online', url: 'https://www.outreachy.org/communities/' },
   ];
 
   for (const h of hackathonsData) {
@@ -502,32 +502,32 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2030,
       degree: 'Any',
       description: `Build and ship a working prototype in ${h.title} hosted by ${h.org}. Open to student teams of 1–4 developers with live mentorship, API credits, and fast-track interview opportunities.`,
-      url: 'https://mlh.io',
+      url: h.url,
     });
   }
 
   // 3. 20 OPEN SOURCE PROGRAMS
   const openSourceData = [
-    { title: 'Google Summer of Code (GSoC) — Open Source Contributor', org: 'Google', skills: ['Python', 'TypeScript', 'Go', 'C++', 'Git'], daysOffset: 10, stipend: '$1,500 – $6,600 Stipend', beginnerFriendly: true, featured: true },
-    { title: 'Outreachy Open Source Fellowships (May–August Cohort)', org: 'Outreachy', skills: ['Python', 'JavaScript', 'React', 'Linux', 'Git'], daysOffset: 7, stipend: '$7,000 Stipend', beginnerFriendly: true, featured: true },
-    { title: 'Linux Foundation LFX Mentorship — Kubernetes & Envoy', org: 'Linux Foundation', skills: ['Go', 'Kubernetes', 'Docker', 'Linux', 'Git'], daysOffset: 14, stipend: '$3,000 – $6,000 Stipend', beginnerFriendly: false, featured: true },
-    { title: 'CNCF Cloud Native Mentorship — Cilium & ArgoCD', org: 'Cloud Native Computing Foundation', skills: ['Go', 'Rust', 'Kubernetes', 'Docker'], daysOffset: 16, stipend: '$4,500 Stipend', beginnerFriendly: false, featured: true },
-    { title: 'MLH Fellowship — Open Source Software Engineering Track', org: 'Major League Hacking', skills: ['TypeScript', 'React', 'Node.js', 'Python', 'Git'], daysOffset: 5, stipend: '$5,000 Educational Stipend', beginnerFriendly: true, featured: true },
-    { title: 'Google Season of Docs — Technical Writing & SDK Engineering', org: 'Google', skills: ['Git', 'REST APIs', 'JavaScript', 'Python'], daysOffset: 22, stipend: '$5,000 Stipend', beginnerFriendly: true, featured: false },
-    { title: 'Meta PyTorch Open Source Ecosystem Fellowship', org: 'Meta', skills: ['Python', 'PyTorch', 'C++', 'Deep Learning'], daysOffset: 19, stipend: '$6,000 Grant', beginnerFriendly: false, featured: false },
-    { title: 'Vercel Next.js & Turborepo Open Source Maintainer Grant', org: 'Vercel', skills: ['TypeScript', 'Rust', 'Next.js', 'React'], daysOffset: 12, stipend: '$4,000 Sponsorship', beginnerFriendly: false, featured: false },
-    { title: 'Stripe Open Source Retreat & SDK Contributor Program', org: 'Stripe', skills: ['TypeScript', 'Go', 'Python', 'REST APIs'], daysOffset: 26, stipend: '$5,500 Grant', beginnerFriendly: false, featured: false },
-    { title: 'Anthropic Model Context Protocol (MCP) Open Source Bounty', org: 'Anthropic', skills: ['TypeScript', 'Python', 'LLMs', 'Node.js'], daysOffset: 8, stipend: '$2,500 – $10,000 Grant', beginnerFriendly: true, featured: false },
-    { title: 'CERN High-Energy Physics ROOT Open Source Fellowship', org: 'CERN', skills: ['C++', 'Python', 'Linux', 'Git'], daysOffset: 21, stipend: 'CHF 4,500 Fellowship', beginnerFriendly: false, featured: false },
-    { title: 'Linux Kernel Mentorship Program (LKMP)', org: 'Linux Foundation', skills: ['C', 'Linux', 'Bash', 'Git'], daysOffset: 17, stipend: '$3,600 Stipend', beginnerFriendly: false, featured: false },
-    { title: 'CNCF OpenTelemetry JavaScript & Python SDK Mentorship', org: 'Cloud Native Computing Foundation', skills: ['TypeScript', 'Python', 'Node.js', 'Docker'], daysOffset: 9, stipend: '$3,000 Stipend', beginnerFriendly: true, featured: false },
-    { title: 'ETHGlobal Ethereum Core Protocol Fellowship', org: 'ETHGlobal', skills: ['Rust', 'Go', 'TypeScript', 'Algorithms'], daysOffset: 25, stipend: '$10,000 Fellowship Grant', beginnerFriendly: false, featured: false },
-    { title: 'Stanford AI DSPy & Stanford NLP Open Source Program', org: 'Stanford AI Lab', skills: ['Python', 'LLMs', 'RAG', 'NLP'], daysOffset: 13, stipend: '$4,000 Research Stipend', beginnerFriendly: true, featured: false },
-    { title: 'NVIDIA Open-Source Triton & TensorRT-LLM Contributors', org: 'NVIDIA', skills: ['C++', 'Python', 'Deep Learning', 'Docker'], daysOffset: 28, stipend: '$5,000 Contributor Award', beginnerFriendly: false, featured: false },
-    { title: 'Razorpay Blade Design System Open Source Sprint', org: 'Razorpay', skills: ['React', 'TypeScript', 'CSS', 'Tailwind CSS'], daysOffset: 6, stipend: '₹1,50,000 Grant + Internship Interview', beginnerFriendly: true, featured: false },
-    { title: 'Adobe Spectrum Web Components Open Source Program', org: 'Adobe', skills: ['HTML', 'CSS', 'TypeScript', 'JavaScript'], daysOffset: 20, stipend: '$3,500 Stipend', beginnerFriendly: true, featured: false },
-    { title: 'Microsoft VS Code Extension & TypeScript Compiler Sprint', org: 'Microsoft', skills: ['TypeScript', 'Node.js', 'Git'], daysOffset: 15, stipend: '$4,000 Open Source Bounty', beginnerFriendly: true, featured: false },
-    { title: 'OpenAI Evals & Swarm Open Source Maintainer Cohort', org: 'OpenAI', skills: ['Python', 'LLMs', 'Generative AI', 'Git'], daysOffset: 11, stipend: '$5,000 API & Cash Grant', beginnerFriendly: true, featured: false },
+    { title: 'Google Summer of Code (GSoC) — Open Source Contributor', org: 'Google', skills: ['Python', 'TypeScript', 'Go', 'C++', 'Git'], daysOffset: 10, stipend: '$1,500 – $6,600 Stipend', beginnerFriendly: true, featured: true, url: 'https://summerofcode.withgoogle.com/' },
+    { title: 'Outreachy Open Source Fellowships (May–August Cohort)', org: 'Outreachy', skills: ['Python', 'JavaScript', 'React', 'Linux', 'Git'], daysOffset: 7, stipend: '$7,000 Stipend', beginnerFriendly: true, featured: true, url: 'https://www.outreachy.org/apply/' },
+    { title: 'Linux Foundation LFX Mentorship — Kubernetes & Envoy', org: 'Linux Foundation', skills: ['Go', 'Kubernetes', 'Docker', 'Linux', 'Git'], daysOffset: 14, stipend: '$3,000 – $6,000 Stipend', beginnerFriendly: false, featured: true, url: 'https://mentorship.lfx.linuxfoundation.org/' },
+    { title: 'CNCF Cloud Native Mentorship — Cilium & ArgoCD', org: 'Cloud Native Computing Foundation', skills: ['Go', 'Rust', 'Kubernetes', 'Docker'], daysOffset: 16, stipend: '$4,500 Stipend', beginnerFriendly: false, featured: true, url: 'https://github.com/cncf/mentoring' },
+    { title: 'MLH Fellowship — Open Source Software Engineering Track', org: 'Major League Hacking', skills: ['TypeScript', 'React', 'Node.js', 'Python', 'Git'], daysOffset: 5, stipend: '$5,000 Educational Stipend', beginnerFriendly: true, featured: true, url: 'https://fellowship.mlh.io/programs/open-source' },
+    { title: 'Google Season of Docs — Technical Writing & SDK Engineering', org: 'Google', skills: ['Git', 'REST APIs', 'JavaScript', 'Python'], daysOffset: 22, stipend: '$5,000 Stipend', beginnerFriendly: true, featured: false, url: 'https://developers.google.com/season-of-docs' },
+    { title: 'Meta PyTorch Open Source Ecosystem Fellowship', org: 'Meta', skills: ['Python', 'PyTorch', 'C++', 'Deep Learning'], daysOffset: 19, stipend: '$6,000 Grant', beginnerFriendly: false, featured: false, url: 'https://pytorch.org/foundation' },
+    { title: 'Vercel Next.js & Turborepo Open Source Maintainer Grant', org: 'Vercel', skills: ['TypeScript', 'Rust', 'Next.js', 'React'], daysOffset: 12, stipend: '$4,000 Sponsorship', beginnerFriendly: false, featured: false, url: 'https://github.com/vercel/next.js' },
+    { title: 'Stripe Open Source Retreat & SDK Contributor Program', org: 'Stripe', skills: ['TypeScript', 'Go', 'Python', 'REST APIs'], daysOffset: 26, stipend: '$5,500 Grant', beginnerFriendly: false, featured: false, url: 'https://stripe.com/open-source-retreat' },
+    { title: 'Anthropic Model Context Protocol (MCP) Open Source Bounty', org: 'Anthropic', skills: ['TypeScript', 'Python', 'LLMs', 'Node.js'], daysOffset: 8, stipend: '$2,500 – $10,000 Grant', beginnerFriendly: true, featured: false, url: 'https://github.com/modelcontextprotocol' },
+    { title: 'CERN High-Energy Physics ROOT Open Source Fellowship', org: 'CERN', skills: ['C++', 'Python', 'Linux', 'Git'], daysOffset: 21, stipend: 'CHF 4,500 Fellowship', beginnerFriendly: false, featured: false, url: 'https://root.cern/' },
+    { title: 'Linux Kernel Mentorship Program (LKMP)', org: 'Linux Foundation', skills: ['C', 'Linux', 'Bash', 'Git'], daysOffset: 17, stipend: '$3,600 Stipend', beginnerFriendly: false, featured: false, url: 'https://wiki.linuxfoundation.org/lkmp' },
+    { title: 'CNCF OpenTelemetry JavaScript & Python SDK Mentorship', org: 'Cloud Native Computing Foundation', skills: ['TypeScript', 'Python', 'Node.js', 'Docker'], daysOffset: 9, stipend: '$3,000 Stipend', beginnerFriendly: true, featured: false, url: 'https://opentelemetry.io/community/' },
+    { title: 'ETHGlobal Ethereum Core Protocol Fellowship', org: 'ETHGlobal', skills: ['Rust', 'Go', 'TypeScript', 'Algorithms'], daysOffset: 25, stipend: '$10,000 Fellowship Grant', beginnerFriendly: false, featured: false, url: 'https://esp.ethereum.foundation/' },
+    { title: 'Stanford AI DSPy & Stanford NLP Open Source Program', org: 'Stanford AI Lab', skills: ['Python', 'LLMs', 'RAG', 'NLP'], daysOffset: 13, stipend: '$4,000 Research Stipend', beginnerFriendly: true, featured: false, url: 'https://github.com/stanfordnlp/dspy' },
+    { title: 'NVIDIA Open-Source Triton & TensorRT-LLM Contributors', org: 'NVIDIA', skills: ['C++', 'Python', 'Deep Learning', 'Docker'], daysOffset: 28, stipend: '$5,000 Contributor Award', beginnerFriendly: false, featured: false, url: 'https://github.com/NVIDIA/TensorRT-LLM' },
+    { title: 'Razorpay Blade Design System Open Source Sprint', org: 'Razorpay', skills: ['React', 'TypeScript', 'CSS', 'Tailwind CSS'], daysOffset: 6, stipend: '₹1,50,000 Grant + Internship Interview', beginnerFriendly: true, featured: false, url: 'https://github.com/razorpay/blade' },
+    { title: 'Adobe Spectrum Web Components Open Source Program', org: 'Adobe', skills: ['HTML', 'CSS', 'TypeScript', 'JavaScript'], daysOffset: 20, stipend: '$3,500 Stipend', beginnerFriendly: true, featured: false, url: 'https://opensource.adobe.com/' },
+    { title: 'Microsoft VS Code Extension & TypeScript Compiler Sprint', org: 'Microsoft', skills: ['TypeScript', 'Node.js', 'Git'], daysOffset: 15, stipend: '$4,000 Open Source Bounty', beginnerFriendly: true, featured: false, url: 'https://github.com/microsoft/vscode' },
+    { title: 'OpenAI Evals & Swarm Open Source Maintainer Cohort', org: 'OpenAI', skills: ['Python', 'LLMs', 'Generative AI', 'Git'], daysOffset: 11, stipend: '$5,000 API & Cash Grant', beginnerFriendly: true, featured: false, url: 'https://github.com/openai/evals' },
   ];
 
   for (const os of openSourceData) {
@@ -551,27 +551,27 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2030,
       degree: 'Any',
       description: `Contribute production code to open-source repositories under direct mentorship from ${os.org} maintainers. Build public GitHub proof-of-work while earning a structured contributor stipend.`,
-      url: 'https://summerofcode.withgoogle.com',
+      url: os.url,
     });
   }
 
   // 4. 15 SCHOLARSHIPS
   const scholarshipsData = [
-    { title: 'Generation Google Scholarship (APAC & India — Computer Science)', org: 'Google', skills: ['Python', 'Data Structures', 'Algorithms'], daysOffset: 9, stipend: '$2,500 USD Award', minCgpa: '8.0', featured: true },
-    { title: 'Adobe India Women-in-Technology Scholarship', org: 'Adobe', skills: ['Python', 'Machine Learning', 'C++', 'React'], daysOffset: 14, stipend: 'Full Tuition + Summer Internship + Conference Travel', minCgpa: '8.0', featured: true },
-    { title: 'Venkat Panchapakesan Memorial Scholarship by Google', org: 'Google', skills: ['JavaScript', 'Python', 'Git'], daysOffset: 18, stipend: '$2,500 USD + Google Retreat', minCgpa: '7.5', featured: false },
-    { title: 'Microsoft Tuition & Diversity in STEM Scholarship', org: 'Microsoft', skills: ['C++', 'Python', 'TypeScript'], daysOffset: 21, stipend: '$5,000 Academic Grant', minCgpa: '7.8', featured: false },
-    { title: 'Linux Foundation Dan Kohn KubeCon Scholar Program', org: 'Linux Foundation', skills: ['Linux', 'Docker', 'Kubernetes', 'Git'], daysOffset: 11, stipend: '$3,000 Travel & Registration Grant', minCgpa: '7.0', featured: false },
-    { title: 'Goldman Sachs Global Leaders & Engineering Scholar Award', org: 'Goldman Sachs', skills: ['Java', 'Python', 'SQL'], daysOffset: 25, stipend: '$4,000 Merit Award', minCgpa: '8.2', featured: false },
-    { title: 'NVIDIA Graduate & Senior Undergrad Hardware/AI Fellowship', org: 'NVIDIA', skills: ['C++', 'PyTorch', 'Deep Learning'], daysOffset: 29, stipend: '$15,000 Research & Tuition Grant', minCgpa: '8.5', featured: false },
-    { title: 'Meta AI & Systems Scholars Grant', org: 'Meta', skills: ['Python', 'PyTorch', 'Machine Learning'], daysOffset: 16, stipend: '$5,000 Academic Scholarship', minCgpa: '8.0', featured: false },
-    { title: 'CNCF Cloud Native Diversity & Student Scholar Grant', org: 'Cloud Native Computing Foundation', skills: ['Go', 'Docker', 'Kubernetes'], daysOffset: 7, stipend: '$2,000 Stipend + Certification Vouchers', minCgpa: '7.0', featured: false },
-    { title: 'ETHGlobal Zero-Knowledge Cryptography Student Grant', org: 'ETHGlobal', skills: ['Rust', 'TypeScript', 'Algorithms'], daysOffset: 13, stipend: '$3,500 Student Grant', minCgpa: '7.5', featured: false },
-    { title: 'Atlassian Foundation STEM Excellence Scholarship', org: 'Atlassian', skills: ['JavaScript', 'React', 'Java'], daysOffset: 20, stipend: '₹2,00,000 Academic Grant', minCgpa: '7.5', featured: false },
-    { title: 'Stanford HAI Student Travel & Research Micro-Grant', org: 'Stanford AI Lab', skills: ['Python', 'NLP', 'LLMs'], daysOffset: 27, stipend: '$3,000 Academic Grant', minCgpa: '8.0', featured: false },
-    { title: 'MITACS Globalink Research Scholar Award', org: 'MITACS', skills: ['Python', 'Machine Learning', 'Data Structures'], daysOffset: 15, stipend: 'CAD $12,000 Fully Funded Grant', minCgpa: '8.0', featured: false },
-    { title: 'Stripe Economic Infrastructure Student Fellowship Grant', org: 'Stripe', skills: ['TypeScript', 'Python', 'SQL'], daysOffset: 19, stipend: '$5,000 Fellowship Award', minCgpa: '7.8', featured: false },
-    { title: 'Outreachy Community Leadership & Travel Scholarship', org: 'Outreachy', skills: ['Git', 'Python', 'Linux'], daysOffset: 23, stipend: '$2,500 Conference & Learning Grant', minCgpa: '6.5', featured: false },
+    { title: 'Generation Google Scholarship (APAC & India — Computer Science)', org: 'Google', skills: ['Python', 'Data Structures', 'Algorithms'], daysOffset: 9, stipend: '$2,500 USD Award', minCgpa: '8.0', featured: true, url: 'https://buildyourfuture.withgoogle.com/scholarships/generation-google-scholarship-apac' },
+    { title: 'Adobe India Women-in-Technology Scholarship', org: 'Adobe', skills: ['Python', 'Machine Learning', 'C++', 'React'], daysOffset: 14, stipend: 'Full Tuition + Summer Internship + Conference Travel', minCgpa: '8.0', featured: true, url: 'https://www.adobe.com/in/lead/creativecloud/women-in-technology.html' },
+    { title: 'Venkat Panchapakesan Memorial Scholarship by Google', org: 'Google', skills: ['JavaScript', 'Python', 'Git'], daysOffset: 18, stipend: '$2,500 USD + Google Retreat', minCgpa: '7.5', featured: false, url: 'https://buildyourfuture.withgoogle.com/scholarships/venkat-panchapakesan-memorial-scholarship' },
+    { title: 'Microsoft Tuition & Diversity in STEM Scholarship', org: 'Microsoft', skills: ['C++', 'Python', 'TypeScript'], daysOffset: 21, stipend: '$5,000 Academic Grant', minCgpa: '7.8', featured: false, url: 'https://careers.microsoft.com/v2/global/en/students' },
+    { title: 'Linux Foundation Dan Kohn KubeCon Scholar Program', org: 'Linux Foundation', skills: ['Linux', 'Docker', 'Kubernetes', 'Git'], daysOffset: 11, stipend: '$3,000 Travel & Registration Grant', minCgpa: '7.0', featured: false, url: 'https://events.linuxfoundation.org/about/scholarships/' },
+    { title: 'Goldman Sachs Global Leaders & Engineering Scholar Award', org: 'Goldman Sachs', skills: ['Java', 'Python', 'SQL'], daysOffset: 25, stipend: '$4,000 Merit Award', minCgpa: '8.2', featured: false, url: 'https://www.goldmansachs.com/citizenship/goldman-sachs-gives/global-leaders' },
+    { title: 'NVIDIA Graduate & Senior Undergrad Hardware/AI Fellowship', org: 'NVIDIA', skills: ['C++', 'PyTorch', 'Deep Learning'], daysOffset: 29, stipend: '$15,000 Research & Tuition Grant', minCgpa: '8.5', featured: false, url: 'https://www.nvidia.com/en-us/research/graduate-fellowships/' },
+    { title: 'Meta AI & Systems Scholars Grant', org: 'Meta', skills: ['Python', 'PyTorch', 'Machine Learning'], daysOffset: 16, stipend: '$5,000 Academic Scholarship', minCgpa: '8.0', featured: false, url: 'https://research.facebook.com/fellows/' },
+    { title: 'CNCF Cloud Native Diversity & Student Scholar Grant', org: 'Cloud Native Computing Foundation', skills: ['Go', 'Docker', 'Kubernetes'], daysOffset: 7, stipend: '$2,000 Stipend + Certification Vouchers', minCgpa: '7.0', featured: false, url: 'https://www.cncf.io/training/scholarships/' },
+    { title: 'ETHGlobal Zero-Knowledge Cryptography Student Grant', org: 'ETHGlobal', skills: ['Rust', 'TypeScript', 'Algorithms'], daysOffset: 13, stipend: '$3,500 Student Grant', minCgpa: '7.5', featured: false, url: 'https://esp.ethereum.foundation/academic-grants' },
+    { title: 'Atlassian Foundation STEM Excellence Scholarship', org: 'Atlassian', skills: ['JavaScript', 'React', 'Java'], daysOffset: 20, stipend: '₹2,00,000 Academic Grant', minCgpa: '7.5', featured: false, url: 'https://www.atlassianfoundation.org/' },
+    { title: 'Stanford HAI Student Travel & Research Micro-Grant', org: 'Stanford AI Lab', skills: ['Python', 'NLP', 'LLMs'], daysOffset: 27, stipend: '$3,000 Academic Grant', minCgpa: '8.0', featured: false, url: 'https://hai.stanford.edu/research/grant-programs' },
+    { title: 'MITACS Globalink Research Scholar Award', org: 'MITACS', skills: ['Python', 'Machine Learning', 'Data Structures'], daysOffset: 15, stipend: 'CAD $12,000 Fully Funded Grant', minCgpa: '8.0', featured: false, url: 'https://www.mitacs.ca/our-programs/globalink-research-internship-students/' },
+    { title: 'Stripe Economic Infrastructure Student Fellowship Grant', org: 'Stripe', skills: ['TypeScript', 'Python', 'SQL'], daysOffset: 19, stipend: '$5,000 Fellowship Award', minCgpa: '7.8', featured: false, url: 'https://stripe.com/jobs/university' },
+    { title: 'Outreachy Community Leadership & Travel Scholarship', org: 'Outreachy', skills: ['Git', 'Python', 'Linux'], daysOffset: 23, stipend: '$2,500 Conference & Learning Grant', minCgpa: '6.5', featured: false, url: 'https://www.outreachy.org/' },
   ];
 
   for (const s of scholarshipsData) {
@@ -596,27 +596,27 @@ function build120Opportunities(): SeedOppTemplate[] {
       degree: 'B.Tech, B.E., M.Tech, B.Sc, MS',
       minCgpa: s.minCgpa,
       description: `Merit and impact-based academic scholarship funded by ${s.org} supporting computer science and engineering students demonstrating leadership, technical excellence, and community contribution.`,
-      url: 'https://buildyourfuture.withgoogle.com/scholarships',
+      url: s.url,
     });
   }
 
   // 5. 15 CODING CONTESTS
   const contestsData = [
-    { title: 'Codeforces Global Round 32 (Div. 1 + Div. 2 Rated)', org: 'Codeforces', skills: ['C++', 'Python', 'Data Structures', 'Algorithms'], daysOffset: 2, stipend: 'Rated Contest + Top 50 T-Shirts & Prizes', difficulty: 'Intermediate', featured: true },
-    { title: 'LeetCode Weekly Contest 438 — Global Algorithmic Arena', org: 'LeetCode', skills: ['C++', 'Python', 'Java', 'Data Structures', 'Algorithms'], daysOffset: 4, stipend: 'LeetCoins + Global Knight Rating + Fast-Track Referrals', difficulty: 'Intermediate', featured: true },
-    { title: 'Meta Hacker Cup 2026 — Qualification & Round 1', org: 'Meta', skills: ['C++', 'Python', 'Algorithms', 'Data Structures'], daysOffset: 9, stipend: '$20,000 First Prize + Meta Interview Invites', difficulty: 'Advanced', featured: true },
-    { title: 'Codeforces Educational Round 178 (Rated for Div. 2)', org: 'Codeforces', skills: ['C++', 'Python', 'Data Structures', 'Algorithms'], daysOffset: 5, stipend: 'Official Rating Points', difficulty: 'Beginner', featured: false },
-    { title: 'LeetCode Biweekly Contest 154', org: 'LeetCode', skills: ['Python', 'C++', 'Java', 'Algorithms'], daysOffset: 7, stipend: 'Global Ranking & Interview Prep Prizes', difficulty: 'Beginner', featured: false },
-    { title: 'Google Kick Start / Code Jam Alumni Practice Arena', org: 'Google', skills: ['C++', 'Python', 'Algorithms', 'Data Structures'], daysOffset: 11, stipend: 'Google Recruiter Spotlight', difficulty: 'Intermediate', featured: false },
-    { title: 'Goldman Sachs Quant & Algorithmic Coding Championship', org: 'Goldman Sachs', skills: ['C++', 'Python', 'Java', 'Algorithms'], daysOffset: 6, stipend: '₹3,00,000 Prizes + Summer Analyst Interviews', difficulty: 'Intermediate', featured: false },
-    { title: 'Atlassian Codegeist & Algorithmic Sprint', org: 'Atlassian', skills: ['Java', 'C++', 'TypeScript', 'Algorithms'], daysOffset: 14, stipend: '$15,000 Prize Pool', difficulty: 'Intermediate', featured: false },
-    { title: 'Microsoft Codess & Campus Algorithmic Cup', org: 'Microsoft', skills: ['C++', 'Python', 'Data Structures', 'Algorithms'], daysOffset: 10, stipend: 'Direct Internship Final Round Interviews', difficulty: 'Intermediate', featured: false },
-    { title: 'Codeforces Div. 3 Beginner Rated Speed Contest', org: 'Codeforces', skills: ['C++', 'Python', 'Java'], daysOffset: 3, stipend: 'Official Div. 3 Rating', difficulty: 'Beginner', featured: false },
-    { title: 'Stripe Capture-The-Bug & Distributed Systems Contest', org: 'Stripe', skills: ['TypeScript', 'Go', 'Python', 'SQL'], daysOffset: 16, stipend: '$10,000 + Stripe Engineering Fast-Track', difficulty: 'Intermediate', featured: false },
-    { title: 'NVIDIA Parallel Programming & CUDA Optimization Contest', org: 'NVIDIA', skills: ['C++', 'Python', 'Algorithms'], daysOffset: 22, stipend: 'NVIDIA RTX 5090 + Cash Awards', difficulty: 'Advanced', featured: false },
-    { title: 'Razorpay High-Throughput System Design & Coding Challenge', org: 'Razorpay', skills: ['Go', 'Java', 'PostgreSQL', 'System Design'], daysOffset: 8, stipend: '₹2,50,000 + SDE Intern Offers', difficulty: 'Intermediate', featured: false },
-    { title: 'Adobe GenSolve Algorithmic & ML Contest', org: 'Adobe', skills: ['Python', 'C++', 'Machine Learning', 'Algorithms'], daysOffset: 13, stipend: '₹4,00,000 + Adobe Internship PPO Track', difficulty: 'Intermediate', featured: false },
-    { title: 'LeetCode Dynamic Programming & Graph Theory Cup', org: 'LeetCode', skills: ['C++', 'Python', 'Algorithms', 'Data Structures'], daysOffset: 18, stipend: '$5,000 Prize Pool', difficulty: 'Intermediate', featured: false },
+    { title: 'Codeforces Global Round 32 (Div. 1 + Div. 2 Rated)', org: 'Codeforces', skills: ['C++', 'Python', 'Data Structures', 'Algorithms'], daysOffset: 2, stipend: 'Rated Contest + Top 50 T-Shirts & Prizes', difficulty: 'Intermediate', featured: true, url: 'https://codeforces.com/contests' },
+    { title: 'LeetCode Weekly Contest 438 — Global Algorithmic Arena', org: 'LeetCode', skills: ['C++', 'Python', 'Java', 'Data Structures', 'Algorithms'], daysOffset: 4, stipend: 'LeetCoins + Global Knight Rating + Fast-Track Referrals', difficulty: 'Intermediate', featured: true, url: 'https://leetcode.com/contest/' },
+    { title: 'Meta Hacker Cup 2026 — Qualification & Round 1', org: 'Meta', skills: ['C++', 'Python', 'Algorithms', 'Data Structures'], daysOffset: 9, stipend: '$20,000 First Prize + Meta Interview Invites', difficulty: 'Advanced', featured: true, url: 'https://www.facebook.com/codingcompetitions/hacker-cup' },
+    { title: 'Codeforces Educational Round 178 (Rated for Div. 2)', org: 'Codeforces', skills: ['C++', 'Python', 'Data Structures', 'Algorithms'], daysOffset: 5, stipend: 'Official Rating Points', difficulty: 'Beginner', featured: false, url: 'https://codeforces.com/contests' },
+    { title: 'LeetCode Biweekly Contest 154', org: 'LeetCode', skills: ['Python', 'C++', 'Java', 'Algorithms'], daysOffset: 7, stipend: 'Global Ranking & Interview Prep Prizes', difficulty: 'Beginner', featured: false, url: 'https://leetcode.com/contest/' },
+    { title: 'Google Kick Start / Code Jam Alumni Practice Arena', org: 'Google', skills: ['C++', 'Python', 'Algorithms', 'Data Structures'], daysOffset: 11, stipend: 'Google Recruiter Spotlight', difficulty: 'Intermediate', featured: false, url: 'https://codingcompetitions.withgoogle.com/' },
+    { title: 'Goldman Sachs Quant & Algorithmic Coding Championship', org: 'Goldman Sachs', skills: ['C++', 'Python', 'Java', 'Algorithms'], daysOffset: 6, stipend: '₹3,00,000 Prizes + Summer Analyst Interviews', difficulty: 'Intermediate', featured: false, url: 'https://www.goldmansachs.com/careers/students' },
+    { title: 'Atlassian Codegeist & Algorithmic Sprint', org: 'Atlassian', skills: ['Java', 'C++', 'TypeScript', 'Algorithms'], daysOffset: 14, stipend: '$15,000 Prize Pool', difficulty: 'Intermediate', featured: false, url: 'https://codegeist.devpost.com/' },
+    { title: 'Microsoft Codess & Campus Algorithmic Cup', org: 'Microsoft', skills: ['C++', 'Python', 'Data Structures', 'Algorithms'], daysOffset: 10, stipend: 'Direct Internship Final Round Interviews', difficulty: 'Intermediate', featured: false, url: 'https://imaginecup.microsoft.com/' },
+    { title: 'Codeforces Div. 3 Beginner Rated Speed Contest', org: 'Codeforces', skills: ['C++', 'Python', 'Java'], daysOffset: 3, stipend: 'Official Div. 3 Rating', difficulty: 'Beginner', featured: false, url: 'https://codeforces.com/contests' },
+    { title: 'Stripe Capture-The-Bug & Distributed Systems Contest', org: 'Stripe', skills: ['TypeScript', 'Go', 'Python', 'SQL'], daysOffset: 16, stipend: '$10,000 + Stripe Engineering Fast-Track', difficulty: 'Intermediate', featured: false, url: 'https://stripe.com/ctf' },
+    { title: 'NVIDIA Parallel Programming & CUDA Optimization Contest', org: 'NVIDIA', skills: ['C++', 'Python', 'Algorithms'], daysOffset: 22, stipend: 'NVIDIA RTX 5090 + Cash Awards', difficulty: 'Advanced', featured: false, url: 'https://developer.nvidia.com/competitions' },
+    { title: 'Razorpay High-Throughput System Design & Coding Challenge', org: 'Razorpay', skills: ['Go', 'Java', 'PostgreSQL', 'System Design'], daysOffset: 8, stipend: '₹2,50,000 + SDE Intern Offers', difficulty: 'Intermediate', featured: false, url: 'https://razorpay.com/jobs/' },
+    { title: 'Adobe GenSolve Algorithmic & ML Contest', org: 'Adobe', skills: ['Python', 'C++', 'Machine Learning', 'Algorithms'], daysOffset: 13, stipend: '₹4,00,000 + Adobe Internship PPO Track', difficulty: 'Intermediate', featured: false, url: 'https://www.adobe.com/careers/university.html' },
+    { title: 'LeetCode Dynamic Programming & Graph Theory Cup', org: 'LeetCode', skills: ['C++', 'Python', 'Algorithms', 'Data Structures'], daysOffset: 18, stipend: '$5,000 Prize Pool', difficulty: 'Intermediate', featured: false, url: 'https://leetcode.com/contest/' },
   ];
 
   for (const c of contestsData) {
@@ -640,22 +640,22 @@ function build120Opportunities(): SeedOppTemplate[] {
       gradMax: 2030,
       degree: 'Any',
       description: `Timed algorithmic and systems coding contest hosted by ${c.org}. Solve 4–7 competitive programming problems to boost your global rating and unlock direct technical interview referrals.`,
-      url: 'https://codeforces.com/contests',
+      url: c.url,
     });
   }
 
   // 6. 10 RESEARCH OPPORTUNITIES
   const researchData = [
-    { title: 'CERN Summer Student Programme — Geneva Scientific Computing', org: 'CERN', skills: ['Python', 'C++', 'Linux', 'Data Structures'], daysOffset: 14, stipend: 'CHF 93 / day + Travel Allowance', location: 'Geneva, Switzerland', remote: false, featured: true },
-    { title: 'MITACS Globalink Research Internship (Canadian Universities)', org: 'MITACS', skills: ['Python', 'Machine Learning', 'Deep Learning', 'Pandas'], daysOffset: 11, stipend: 'CAD $12,000 Fully Funded', location: 'Canada (Multiple Universities)', remote: false, featured: true },
-    { title: 'Stanford AI Lab (SAIL) Undergraduate Visiting Researcher', org: 'Stanford AI Lab', skills: ['Python', 'PyTorch', 'LLMs', 'RAG', 'NLP'], daysOffset: 19, stipend: '$4,800 / month Stipend', location: 'Stanford / Hybrid', remote: true, featured: true },
-    { title: 'Google Research Student Researcher Program — Multimodal AI', org: 'Google', skills: ['Python', 'PyTorch', 'Deep Learning', 'Computer Vision'], daysOffset: 8, stipend: '₹1,30,000 / month', location: 'Bengaluru, India', remote: false, featured: false },
-    { title: 'Microsoft Research (MSR India) Research Fellow / Intern', org: 'Microsoft', skills: ['Python', 'LLMs', 'Algorithms', 'Machine Learning'], daysOffset: 15, stipend: '₹1,15,000 / month', location: 'Bengaluru, India', remote: false, featured: false },
-    { title: 'Anthropic Mechanistic Interpretability Research Fellowship', org: 'Anthropic', skills: ['Python', 'PyTorch', 'LLMs', 'Deep Learning'], daysOffset: 17, stipend: '$7,500 / month + Compute Cluster', location: 'Remote / San Francisco', remote: true, featured: false },
-    { title: 'Adobe Research Undergraduate Mentorship — Generative Vision', org: 'Adobe', skills: ['Python', 'Computer Vision', 'PyTorch', 'Generative AI'], daysOffset: 21, stipend: '₹1,05,000 / month', location: 'Bengaluru, India', remote: false, featured: false },
-    { title: 'Meta Fundamental AI Research (FAIR) Student Residency', org: 'Meta', skills: ['Python', 'PyTorch', 'NLP', 'Deep Learning'], daysOffset: 24, stipend: '$7,000 / month', location: 'Remote / London / Paris', remote: true, featured: false },
-    { title: 'NVIDIA Research Academic Collaboration — Neural Rendering', org: 'NVIDIA', skills: ['C++', 'Python', 'Computer Vision', 'Deep Learning'], daysOffset: 26, stipend: '$6,200 / month', location: 'Remote / Santa Clara', remote: true, featured: false },
-    { title: 'OpenAI Superalignment & Reasoning Research Grant Cohort', org: 'OpenAI', skills: ['Python', 'PyTorch', 'LLMs', 'Machine Learning'], daysOffset: 12, stipend: '$10,000 Research Stipend', location: 'Remote (Global)', remote: true, featured: false },
+    { title: 'CERN Summer Student Programme — Geneva Scientific Computing', org: 'CERN', skills: ['Python', 'C++', 'Linux', 'Data Structures'], daysOffset: 14, stipend: 'CHF 93 / day + Travel Allowance', location: 'Geneva, Switzerland', remote: false, featured: true, url: 'https://careers.cern/summer' },
+    { title: 'MITACS Globalink Research Internship (Canadian Universities)', org: 'MITACS', skills: ['Python', 'Machine Learning', 'Deep Learning', 'Pandas'], daysOffset: 11, stipend: 'CAD $12,000 Fully Funded', location: 'Canada (Multiple Universities)', remote: false, featured: true, url: 'https://www.mitacs.ca/our-programs/globalink-research-internship-students/' },
+    { title: 'Stanford AI Lab (SAIL) Undergraduate Visiting Researcher', org: 'Stanford AI Lab', skills: ['Python', 'PyTorch', 'LLMs', 'RAG', 'NLP'], daysOffset: 19, stipend: '$4,800 / month Stipend', location: 'Stanford / Hybrid', remote: true, featured: true, url: 'https://ai.stanford.edu/' },
+    { title: 'Google Research Student Researcher Program — Multimodal AI', org: 'Google', skills: ['Python', 'PyTorch', 'Deep Learning', 'Computer Vision'], daysOffset: 8, stipend: '₹1,30,000 / month', location: 'Bengaluru, India', remote: false, featured: false, url: 'https://buildyourfuture.withgoogle.com/programs/student-researcher-program' },
+    { title: 'Microsoft Research (MSR India) Research Fellow / Intern', org: 'Microsoft', skills: ['Python', 'LLMs', 'Algorithms', 'Machine Learning'], daysOffset: 15, stipend: '₹1,15,000 / month', location: 'Bengaluru, India', remote: false, featured: false, url: 'https://www.microsoft.com/en-us/research/lab/microsoft-research-india/' },
+    { title: 'Anthropic Mechanistic Interpretability Research Fellowship', org: 'Anthropic', skills: ['Python', 'PyTorch', 'LLMs', 'Deep Learning'], daysOffset: 17, stipend: '$7,500 / month + Compute Cluster', location: 'Remote / San Francisco', remote: true, featured: false, url: 'https://www.anthropic.com/research' },
+    { title: 'Adobe Research Undergraduate Mentorship — Generative Vision', org: 'Adobe', skills: ['Python', 'Computer Vision', 'PyTorch', 'Generative AI'], daysOffset: 21, stipend: '₹1,05,000 / month', location: 'Bengaluru, India', remote: false, featured: false, url: 'https://research.adobe.com/careers/' },
+    { title: 'Meta Fundamental AI Research (FAIR) Student Residency', org: 'Meta', skills: ['Python', 'PyTorch', 'NLP', 'Deep Learning'], daysOffset: 24, stipend: '$7,000 / month', location: 'Remote / London / Paris', remote: true, featured: false, url: 'https://ai.meta.com/join-us/' },
+    { title: 'NVIDIA Research Academic Collaboration — Neural Rendering', org: 'NVIDIA', skills: ['C++', 'Python', 'Computer Vision', 'Deep Learning'], daysOffset: 26, stipend: '$6,200 / month', location: 'Remote / Santa Clara', remote: true, featured: false, url: 'https://www.nvidia.com/en-us/research/' },
+    { title: 'OpenAI Superalignment & Reasoning Research Grant Cohort', org: 'OpenAI', skills: ['Python', 'PyTorch', 'LLMs', 'Machine Learning'], daysOffset: 12, stipend: '$10,000 Research Stipend', location: 'Remote (Global)', remote: true, featured: false, url: 'https://openai.com/residency/' },
   ];
 
   for (const r of researchData) {
@@ -680,22 +680,22 @@ function build120Opportunities(): SeedOppTemplate[] {
       degree: 'B.Tech, M.Tech, B.Sc, MS, PhD',
       minCgpa: '8.0',
       description: `Collaborate with principal investigators and research scientists at ${r.org} to co-author peer-reviewed publications and open-source research artifacts in ${r.skills.join(', ')}.`,
-      url: 'https://careers.cern',
+      url: r.url,
     });
   }
 
   // 7. 10 JOBS & FELLOWSHIPS
   const jobsData = [
-    { title: 'Google University Graduate Software Engineer — Cloud & AI', org: 'Google', skills: ['C++', 'Python', 'Go', 'Java', 'System Design', 'Algorithms'], daysOffset: 10, salary: '₹32–38 LPA ($145k Global)', location: 'Bengaluru / Hyderabad', remote: false, featured: true },
-    { title: 'Stripe New Grad Software Engineer — Core Infrastructure', org: 'Stripe', skills: ['TypeScript', 'Go', 'React', 'PostgreSQL', 'REST APIs'], daysOffset: 13, salary: '₹42 LPA', location: 'Bengaluru / Remote', remote: true, featured: true },
-    { title: 'Vercel Junior Systems & Edge Network Engineer', org: 'Vercel', skills: ['TypeScript', 'Rust', 'Next.js', 'React', 'Node.js'], daysOffset: 16, salary: '$130,000 – $155,000 / year', location: 'Remote (Global)', remote: true, featured: true },
-    { title: 'Anthropic Entry-Level AI Product Engineer', org: 'Anthropic', skills: ['TypeScript', 'Python', 'React', 'LLMs', 'RAG'], daysOffset: 20, salary: '$165,000 / year', location: 'San Francisco / Remote', remote: true, featured: false },
-    { title: 'Razorpay Software Development Engineer I (SDE-1)', org: 'Razorpay', skills: ['Go', 'Node.js', 'PostgreSQL', 'Redis', 'Docker'], daysOffset: 7, salary: '₹24–28 LPA', location: 'Bengaluru, India', remote: false, featured: false },
-    { title: 'Atlassian Graduate Software Engineer (2026/2027 Cohort)', org: 'Atlassian', skills: ['TypeScript', 'React', 'Java', 'GraphQL', 'AWS'], daysOffset: 15, salary: '₹34 LPA', location: 'Remote (India)', remote: true, featured: false },
-    { title: 'Microsoft Software Engineer I — Copilot Developer Tools', org: 'Microsoft', skills: ['TypeScript', 'C++', 'Python', 'Azure', 'React'], daysOffset: 18, salary: '₹28–34 LPA', location: 'Hyderabad / Bengaluru', remote: false, featured: false },
-    { title: 'NVIDIA System Software Engineer — New College Grad', org: 'NVIDIA', skills: ['C', 'C++', 'Python', 'Linux', 'Algorithms'], daysOffset: 22, salary: '₹29 LPA', location: 'Bengaluru / Pune', remote: false, featured: false },
-    { title: 'Goldman Sachs Engineering Analyst — Full Time', org: 'Goldman Sachs', skills: ['Java', 'Python', 'SQL', 'React', 'Algorithms'], daysOffset: 11, salary: '₹26 LPA', location: 'Bengaluru / Hyderabad', remote: false, featured: false },
-    { title: 'OpenAI Residency Program — Software & ML Engineers', org: 'OpenAI', skills: ['Python', 'PyTorch', 'Deep Learning', 'LLMs', 'C++'], daysOffset: 9, salary: '$210,000 / year pro-rated', location: 'San Francisco / Remote', remote: true, featured: true },
+    { title: 'Google University Graduate Software Engineer — Cloud & AI', org: 'Google', skills: ['C++', 'Python', 'Go', 'Java', 'System Design', 'Algorithms'], daysOffset: 10, salary: '₹32–38 LPA ($145k Global)', location: 'Bengaluru / Hyderabad', remote: false, featured: true, url: 'https://www.google.com/about/careers/applications/students' },
+    { title: 'Stripe New Grad Software Engineer — Core Infrastructure', org: 'Stripe', skills: ['TypeScript', 'Go', 'React', 'PostgreSQL', 'REST APIs'], daysOffset: 13, salary: '₹42 LPA', location: 'Bengaluru / Remote', remote: true, featured: true, url: 'https://stripe.com/jobs/university' },
+    { title: 'Vercel Junior Systems & Edge Network Engineer', org: 'Vercel', skills: ['TypeScript', 'Rust', 'Next.js', 'React', 'Node.js'], daysOffset: 16, salary: '$130,000 – $155,000 / year', location: 'Remote (Global)', remote: true, featured: true, url: 'https://vercel.com/careers' },
+    { title: 'Anthropic Entry-Level AI Product Engineer', org: 'Anthropic', skills: ['TypeScript', 'Python', 'React', 'LLMs', 'RAG'], daysOffset: 20, salary: '$165,000 / year', location: 'San Francisco / Remote', remote: true, featured: false, url: 'https://www.anthropic.com/careers/jobs' },
+    { title: 'Razorpay Software Development Engineer I (SDE-1)', org: 'Razorpay', skills: ['Go', 'Node.js', 'PostgreSQL', 'Redis', 'Docker'], daysOffset: 7, salary: '₹24–28 LPA', location: 'Bengaluru, India', remote: false, featured: false, url: 'https://razorpay.com/jobs/' },
+    { title: 'Atlassian Graduate Software Engineer (2026/2027 Cohort)', org: 'Atlassian', skills: ['TypeScript', 'React', 'Java', 'GraphQL', 'AWS'], daysOffset: 15, salary: '₹34 LPA', location: 'Remote (India)', remote: true, featured: false, url: 'https://www.atlassian.com/company/careers/graduates' },
+    { title: 'Microsoft Software Engineer I — Copilot Developer Tools', org: 'Microsoft', skills: ['TypeScript', 'C++', 'Python', 'Azure', 'React'], daysOffset: 18, salary: '₹28–34 LPA', location: 'Hyderabad / Bengaluru', remote: false, featured: false, url: 'https://careers.microsoft.com/v2/global/en/students' },
+    { title: 'NVIDIA System Software Engineer — New College Grad', org: 'NVIDIA', skills: ['C', 'C++', 'Python', 'Linux', 'Algorithms'], daysOffset: 22, salary: '₹29 LPA', location: 'Bengaluru / Pune', remote: false, featured: false, url: 'https://www.nvidia.com/en-us/about-nvidia/careers/university-recruiting/' },
+    { title: 'Goldman Sachs Engineering Analyst — Full Time', org: 'Goldman Sachs', skills: ['Java', 'Python', 'SQL', 'React', 'Algorithms'], daysOffset: 11, salary: '₹26 LPA', location: 'Bengaluru / Hyderabad', remote: false, featured: false, url: 'https://www.goldmansachs.com/careers/students/programs-and-internships' },
+    { title: 'OpenAI Residency Program — Software & ML Engineers', org: 'OpenAI', skills: ['Python', 'PyTorch', 'Deep Learning', 'LLMs', 'C++'], daysOffset: 9, salary: '$210,000 / year pro-rated', location: 'San Francisco / Remote', remote: true, featured: true, url: 'https://openai.com/residency/' },
   ];
 
   for (const j of jobsData) {
@@ -720,7 +720,7 @@ function build120Opportunities(): SeedOppTemplate[] {
       degree: 'B.Tech, B.E., M.Tech, MS',
       minCgpa: '7.0',
       description: `Full-time early-career engineering role at ${j.org}. Own end-to-end architecture, production reliability, and feature delivery using ${j.skills.join(', ')}.`,
-      url: 'https://careers.google.com',
+      url: j.url,
     });
   }
 

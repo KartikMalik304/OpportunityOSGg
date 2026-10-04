@@ -40,6 +40,7 @@ import {
   generateCustomRoadmap,
   parseAndAnalyzeResume,
   answerOpportunityAssistant,
+  verifyOpportunityWithAI,
 } from './src/services/aiService.ts';
 
 dotenv.config();
@@ -252,7 +253,50 @@ async function startServer() {
     }
   });
 
-  // POST /api/opportunities (Admin or Organization creates opportunity with deduplication)
+  // POST /api/ai/verify-opportunity (Real-time AI Verification Pre-Check for Hackathons & Internships)
+  app.post('/api/ai/verify-opportunity', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const {
+        title,
+        organizationName,
+        category,
+        applicationUrl,
+        deadline,
+        location,
+        workMode,
+        stipend,
+        description,
+        requiredSkills,
+      } = req.body || {};
+
+      const verification = await verifyOpportunityWithAI({
+        title: title || '',
+        organizationName: organizationName || '',
+        category: category || 'Internship',
+        applicationUrl: applicationUrl || '',
+        deadline: deadline || '',
+        location,
+        workMode,
+        stipend,
+        description,
+        requiredSkills: Array.isArray(requiredSkills)
+          ? requiredSkills
+          : typeof requiredSkills === 'string'
+          ? requiredSkills
+              .split(',')
+              .map((s: string) => s.trim())
+              .filter(Boolean)
+          : [],
+      });
+
+      res.json(verification);
+    } catch (error: any) {
+      console.error('AI opportunity verification error:', error);
+      res.status(500).json({ error: error.message || 'Failed to verify opportunity with AI' });
+    }
+  });
+
+  // POST /api/opportunities (User, Organization, or Admin adds Hackathon / Internship — Verified by AI first)
   app.post('/api/opportunities', requireAuth, async (req: AuthRequest, res) => {
     try {
       const bundle = await getFullUserBundle(
@@ -285,14 +329,47 @@ async function startServer() {
       } = req.body;
 
       if (!title || !organizationName || !category || !deadline || !applicationUrl) {
-        return res.status(400).json({ error: 'Title, organization, category, deadline, and URL are required.' });
+        return res.status(400).json({
+          error: 'Title, organization, category, deadline, and direct application URL are required.',
+        });
       }
 
-      const defaultStatus = bundle.user.role === 'ADMIN' ? 'Published' : 'Pending Review';
+      const parsedSkills = Array.isArray(requiredSkills)
+        ? requiredSkills
+        : typeof requiredSkills === 'string'
+        ? requiredSkills
+            .split(',')
+            .map((s: string) => s.trim())
+            .filter(Boolean)
+        : [];
 
-      const result = await createOpportunityWithDeduplication({
+      // Run AI Verification before adding the opportunity to the platform
+      const verification = await verifyOpportunityWithAI({
         title,
         organizationName,
+        category,
+        applicationUrl,
+        deadline,
+        location,
+        workMode,
+        stipend: stipend || salary || '',
+        description,
+        requiredSkills: parsedSkills,
+      });
+
+      if (!verification.isValid) {
+        return res.status(422).json({
+          verified: false,
+          verification,
+          error:
+            verification.verificationSummary ||
+            'AI Verification rejected this opportunity because the URL or details could not be verified as authentic.',
+        });
+      }
+
+      const result = await createOpportunityWithDeduplication({
+        title: String(title).trim(),
+        organizationName: String(organizationName).trim(),
         category,
         location: location || 'Remote',
         workMode: workMode || 'Remote',
@@ -300,29 +377,53 @@ async function startServer() {
         paid: Boolean(paid),
         stipend: stipend || '',
         salary: salary || '',
-        duration: duration || '12 Weeks',
+        duration: duration || (category === 'Hackathon' ? '48 Hours' : '12 Weeks'),
         deadline,
-        applicationUrl,
-        source: source || (bundle.user.role === 'ADMIN' ? 'Admin Entry' : 'Organization Portal'),
+        applicationUrl: String(applicationUrl).trim(),
+        source:
+          source ||
+          `AI Verified (${verification.confidenceScore}% Confidence) · Added by ${bundle.user.name}`,
         difficulty: difficulty || 'Intermediate',
         beginnerFriendly: Boolean(beginnerFriendly),
         description: description || `${title} hosted by ${organizationName}.`,
-        requiredSkills: Array.isArray(requiredSkills) ? requiredSkills : [],
+        requiredSkills: parsedSkills,
         gradYearMin: gradYearMin ? Number(gradYearMin) : 2025,
-        gradYearMax: gradYearMax ? Number(gradYearMax) : 2029,
+        gradYearMax: gradYearMax ? Number(gradYearMax) : 2030,
         degree: degree || 'Any',
         minCgpa,
-        status: defaultStatus,
+        status: 'Published',
       });
 
       if (result.duplicate) {
         return res.status(409).json({
-          error: 'Duplicate opportunity detected: An opportunity with this organization and title already exists.',
+          verified: true,
+          verification,
+          error:
+            'Duplicate opportunity detected: An opportunity with this organization and title already exists.',
           opportunity: result.opportunity,
         });
       }
 
-      res.status(201).json(result.opportunity);
+      // Reward user with +50 XP and create a notification
+      await db
+        .update(users)
+        .set({ points: (bundle.user.points || 180) + 50, updatedAt: new Date() })
+        .where(eq(users.id, bundle.user.id));
+
+      await db.insert(notifications).values({
+        userId: bundle.user.id,
+        title: `✓ AI Verified & Published: ${title}`,
+        message: `Your ${category} submission (${organizationName}) passed AI verification (${verification.confidenceScore}% confidence) and is now live for students.`,
+        type: 'MATCH',
+        opportunityId: result.opportunity.id,
+        read: false,
+      });
+
+      res.status(201).json({
+        verified: true,
+        verification,
+        opportunity: result.opportunity,
+      });
     } catch (error: any) {
       console.error('Failed to create opportunity:', error);
       res.status(500).json({ error: error.message || 'Failed to create opportunity' });
