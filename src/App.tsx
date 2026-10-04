@@ -33,6 +33,7 @@ import {
   Upload,
   Zap,
   Users,
+  Crosshair,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -66,10 +67,13 @@ import {
   ApplicationTrackerView,
   CalendarAndDeadlinesView,
   AdminAndOrgView,
+  OwnerDashboardUserMonitor,
 } from './components/TrackerAndAdminView.tsx';
+import { FocusModeStudio, FocusFeatureItem } from './components/FocusModeStudio.tsx';
 
 type NavTab =
   | 'Dashboard'
+  | 'Focus Mode'
   | 'Discover'
   | 'Internships'
   | 'Hackathons'
@@ -90,6 +94,7 @@ type NavTab =
 
 const SIDEBAR_ITEMS: Array<{ id: NavTab; label: string; icon: React.ComponentType<any>; categoryFilter?: string }> = [
   { id: 'Dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { id: 'Focus Mode', label: 'Focus Mode · Add Feature', icon: Crosshair },
   { id: 'Discover', label: 'Discover Feed', icon: Compass },
   { id: 'Internships', label: 'Internships', icon: Briefcase, categoryFilter: 'Internship' },
   { id: 'Hackathons', label: 'Hackathons', icon: Terminal, categoryFilter: 'Hackathon' },
@@ -699,11 +704,21 @@ function WorkspaceApp() {
     authFetch,
   } = useAuth();
 
-  const [darkMode, setDarkMode] = useState(true);
+  const [darkMode, setDarkMode] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('opportunityos_theme');
+      if (saved === 'light') return false;
+      if (saved === 'dark') return true;
+    } catch {
+      // ignore storage errors
+    }
+    return true;
+  });
   const [activeTab, setActiveTab] = useState<NavTab>('Dashboard');
   const [bundle, setBundle] = useState<DashboardBundle | null>(null);
   const [loadingBundle, setLoadingBundle] = useState(false);
   const [bundleError, setBundleError] = useState<string | null>(null);
+  const [settingsSavedNotice, setSettingsSavedNotice] = useState<string | null>(null);
 
   // Modals & Drawers
   const [authModalOpen, setAuthModalOpen] = useState(false);
@@ -718,6 +733,100 @@ function WorkspaceApp() {
     useState<EnrichedOpportunity | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [assistantOpen, setAssistantOpen] = useState(false);
+
+  // Focus Mode & Add Particular Feature State
+  const [focusModeEnabled, setFocusModeEnabled] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('opportunityos_focus_mode') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [distractionFreeLock, setDistractionFreeLock] = useState<boolean>(false);
+  const [activeFocusedFeature, setActiveFocusedFeature] = useState<FocusFeatureItem | null>({
+    id: 'default_feat_1',
+    title: 'Add Verified Hackathon / Internship Listing',
+    category: 'Hackathons',
+    description:
+      'Focus on submitting and verifying a live hackathon or internship URL with AI authenticity checks.',
+    priority: 'Critical',
+    status: 'active',
+    targetMinutes: 25,
+    completedMinutes: 0,
+    checklistItems: [
+      'Locate official registration / application URL (Devpost, MLH, Unstop, or company portal)',
+      'Verify application deadline and eligibility cohort requirements',
+      'Run AI Authenticity & Live URL Reachability Check in OpportunityOS',
+      'Publish verified opportunity to the platform feed (+50 XP)',
+    ],
+    completedChecklistCount: 0,
+    ownerId: 'workspace',
+  });
+  const [timerSecondsLeft, setTimerSecondsLeft] = useState<number>(25 * 60);
+  const [timerRunning, setTimerRunning] = useState<boolean>(false);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('opportunityos_focus_mode', focusModeEnabled ? 'true' : 'false');
+    } catch {
+      // ignore
+    }
+  }, [focusModeEnabled]);
+
+  useEffect(() => {
+    if (!timerRunning) return;
+    const id = setInterval(() => {
+      setTimerSecondsLeft((prev) => {
+        if (prev <= 1) {
+          setTimerRunning(false);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => clearInterval(id);
+  }, [timerRunning]);
+
+  const handleLaunchFocusedWorkspaceAction = (category: FocusFeatureItem['category']) => {
+    if (category === 'Hackathons') {
+      setSubmitOpportunityCategory('Hackathon');
+      setShowSubmitOpportunityModal(true);
+    } else if (category === 'Internships') {
+      setSubmitOpportunityCategory('Internship');
+      setShowSubmitOpportunityModal(true);
+    } else if (category === 'Resume & Profile') {
+      setShowQuickResumeModal(true);
+    } else if (category === 'Applications') {
+      setShowQuickLogModal(true);
+    } else if (category === 'Roadmaps') {
+      handleSelectNavTab('Roadmaps');
+    } else if (category === 'Coding & GitHub') {
+      handleSelectNavTab('Coding');
+    } else {
+      handleSelectNavTab('Focus Mode');
+    }
+  };
+
+  const handleCompleteFocusSprint = async () => {
+    setTimerRunning(false);
+    if (activeFocusedFeature) {
+      const addedMins = Math.max(
+        1,
+        Math.round((activeFocusedFeature.targetMinutes * 60 - timerSecondsLeft) / 60) ||
+          activeFocusedFeature.targetMinutes
+      );
+      const updated: FocusFeatureItem = {
+        ...activeFocusedFeature,
+        completedMinutes: activeFocusedFeature.completedMinutes + addedMins,
+      };
+      setActiveFocusedFeature(updated);
+      await authFetch(`/api/focus-features/${updated.id}`, {
+        method: 'PUT',
+        body: JSON.stringify({ completedMinutes: updated.completedMinutes }),
+      }).catch(() => {});
+      setTimerSecondsLeft(activeFocusedFeature.targetMinutes * 60);
+    }
+  };
 
   // AI Assistant Chat State
   const [assistantInput, setAssistantInput] = useState('');
@@ -746,8 +855,17 @@ function WorkspaceApp() {
     const root = document.documentElement;
     if (darkMode) {
       root.classList.add('dark');
+      root.classList.remove('light');
+      root.style.colorScheme = 'dark';
     } else {
       root.classList.remove('dark');
+      root.classList.add('light');
+      root.style.colorScheme = 'light';
+    }
+    try {
+      localStorage.setItem('opportunityos_theme', darkMode ? 'dark' : 'light');
+    } catch {
+      // ignore storage errors
     }
   }, [darkMode]);
 
@@ -779,6 +897,24 @@ function WorkspaceApp() {
       fetchDashboard();
     }
   }, [isAuthenticated, token]);
+
+  // Live Session Heartbeat: Track active user status & cumulative time spent in PostgreSQL
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    authFetch('/api/activity/heartbeat', {
+      method: 'POST',
+      body: JSON.stringify({ elapsedSeconds: 30, isInitialSession: false }),
+    }).catch(() => {});
+
+    const interval = setInterval(() => {
+      authFetch('/api/activity/heartbeat', {
+        method: 'POST',
+        body: JSON.stringify({ elapsedSeconds: 30, isInitialSession: false }),
+      }).catch(() => {});
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, [isAuthenticated, token, authFetch]);
 
   // Sync category filter when user clicks a dedicated category tab in the sidebar
   const handleSelectNavTab = (tab: NavTab) => {
@@ -840,6 +976,16 @@ function WorkspaceApp() {
 
   // Action Handlers connected to PostgreSQL APIs
   const handleToggleSave = async (oppId: number, currentSaved: boolean) => {
+    setBundle((prev) =>
+      prev
+        ? {
+            ...prev,
+            opportunities: prev.opportunities.map((o) =>
+              o.id === oppId ? { ...o, isSaved: !currentSaved } : o
+            ),
+          }
+        : prev
+    );
     await authFetch(`/api/opportunities/${oppId}/save`, {
       method: currentSaved ? 'DELETE' : 'POST',
     });
@@ -887,6 +1033,37 @@ function WorkspaceApp() {
   };
 
   const handleSaveProfile = async (payload: Record<string, any>) => {
+    setBundle((prev) => {
+      if (!prev) return prev;
+      return {
+        ...prev,
+        user: {
+          ...prev.user,
+          ...(payload.name !== undefined ? { name: payload.name } : {}),
+          ...(payload.role !== undefined ? { role: payload.role } : {}),
+          ...(payload.leaderboardOptOut !== undefined
+            ? { leaderboardOptOut: payload.leaderboardOptOut }
+            : {}),
+        },
+        profile: {
+          ...prev.profile,
+          ...(payload.notificationEmail !== undefined
+            ? { notificationEmail: payload.notificationEmail }
+            : {}),
+          ...(payload.notificationInApp !== undefined
+            ? { notificationInApp: payload.notificationInApp }
+            : {}),
+          ...(payload.notificationFrequency !== undefined
+            ? { notificationFrequency: payload.notificationFrequency }
+            : {}),
+          ...(payload.savedSearches !== undefined
+            ? { savedSearches: payload.savedSearches }
+            : {}),
+        },
+      };
+    });
+    setSettingsSavedNotice('✓ Preferences saved and synced to PostgreSQL');
+    setTimeout(() => setSettingsSavedNotice(null), 2500);
     await authFetch('/api/profile', {
       method: 'PUT',
       body: JSON.stringify(payload),
@@ -907,11 +1084,13 @@ function WorkspaceApp() {
   };
 
   const handleGenerateAiRoadmap = async (goalPrompt: string) => {
-    await authFetch('/api/roadmaps/generate-ai', {
+    const res = await authFetch('/api/roadmaps/generate-ai', {
       method: 'POST',
       body: JSON.stringify({ goalPrompt }),
     });
+    const data = await res.json().catch(() => ({}));
     await fetchDashboard();
+    return data?.roadmapId;
   };
 
   const handleConnectCodingPlatform = async (platform: string, username: string) => {
@@ -941,11 +1120,29 @@ function WorkspaceApp() {
   };
 
   const handleMarkNotifRead = async (notifId: number) => {
+    setBundle((prev) =>
+      prev
+        ? {
+            ...prev,
+            notifications: prev.notifications.map((n) =>
+              n.id === notifId ? { ...n, read: true } : n
+            ),
+          }
+        : prev
+    );
     await authFetch(`/api/notifications/${notifId}/read`, { method: 'PUT' });
     await fetchDashboard();
   };
 
   const handleMarkAllNotifsRead = async () => {
+    setBundle((prev) =>
+      prev
+        ? {
+            ...prev,
+            notifications: prev.notifications.map((n) => ({ ...n, read: true })),
+          }
+        : prev
+    );
     await authFetch('/api/notifications/read-all', { method: 'PUT' });
     await fetchDashboard();
   };
@@ -1039,8 +1236,7 @@ function WorkspaceApp() {
   const unreadNotifCount = bundle?.notifications.filter((n) => !n.read).length || 0;
   const isOwnerAdmin = Boolean(
     bundle?.user &&
-      bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com' &&
-      bundle.user.role === 'ADMIN'
+      bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com'
   );
   const visibleSidebarItems = SIDEBAR_ITEMS.filter((item) => {
     if (item.id === 'Admin') return isOwnerAdmin;
@@ -1063,7 +1259,8 @@ function WorkspaceApp() {
 
   return (
     <div className="min-h-screen flex bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100">
-      {/* Desktop Sidebar (250px width) */}
+      {/* Desktop Sidebar (250px width) - Hidden when Distraction-Free Focus Lock is active */}
+      {!distractionFreeLock && (
       <aside className="hidden lg:flex flex-col w-64 shrink-0 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 sticky top-0 h-screen">
         <div className="px-5 py-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between">
           <button
@@ -1130,6 +1327,7 @@ function WorkspaceApp() {
           </div>
         </div>
       </aside>
+      )}
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
@@ -1202,6 +1400,25 @@ function WorkspaceApp() {
             </div>
 
             <button
+              onClick={() => {
+                if (activeTab !== 'Focus Mode') {
+                  handleSelectNavTab('Focus Mode');
+                  setFocusModeEnabled(true);
+                } else {
+                  setFocusModeEnabled(!focusModeEnabled);
+                }
+              }}
+              className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border transition-colors cursor-pointer whitespace-nowrap ${
+                focusModeEnabled || activeTab === 'Focus Mode'
+                  ? 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500'
+                  : 'text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900'
+              }`}
+            >
+              <Crosshair className="w-3.5 h-3.5" />
+              <span>{focusModeEnabled ? 'Focus Mode: ON' : 'Focus Mode'}</span>
+            </button>
+
+            <button
               onClick={() => setAssistantOpen(!assistantOpen)}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 border border-blue-500/40 rounded-lg hover:bg-blue-500/10 cursor-pointer whitespace-nowrap"
             >
@@ -1218,13 +1435,87 @@ function WorkspaceApp() {
 
             <button
               onClick={() => setDarkMode(!darkMode)}
-              aria-label="Toggle theme"
-              className="p-1.5 text-slate-500 hover:text-slate-900 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-800 cursor-pointer"
+              aria-label="Toggle Day/Night theme"
+              title={darkMode ? 'Switch to Day (Light) Mode' : 'Switch to Night (Dark) Mode'}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 hover:text-slate-900 dark:hover:text-white rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-100/80 dark:bg-slate-900/80 hover:bg-slate-200/80 dark:hover:bg-slate-800 transition-colors cursor-pointer whitespace-nowrap"
             >
-              {darkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
+              {darkMode ? (
+                <>
+                  <Sun className="w-3.5 h-3.5 text-amber-400" />
+                  <span>Day Mode</span>
+                </>
+              ) : (
+                <>
+                  <Moon className="w-3.5 h-3.5 text-blue-600" />
+                  <span>Night Mode</span>
+                </>
+              )}
             </button>
           </div>
         </header>
+
+        {/* Active Focus Mode Live Bar (Visible across all tabs whenever Focus Mode is ON) */}
+        {focusModeEnabled && activeFocusedFeature && (
+          <div className="px-6 py-2.5 border-b border-emerald-500/30 bg-emerald-500/10 flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="inline-flex items-center gap-1.5 font-mono font-bold text-emerald-700 dark:text-emerald-300">
+                <Crosshair className="w-3.5 h-3.5" />
+                <span>FOCUS MODE ON:</span>
+              </span>
+              <span className="font-bold text-slate-900 dark:text-white">
+                {activeFocusedFeature.title}
+              </span>
+              <span className="text-slate-500 dark:text-slate-400 font-mono">
+                ({activeFocusedFeature.category} ·{' '}
+                {activeFocusedFeature.completedChecklistCount}/
+                {activeFocusedFeature.checklistItems.length} steps)
+              </span>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="font-mono font-bold tabular-nums px-2.5 py-1 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-900 dark:text-white">
+                {String(Math.floor(timerSecondsLeft / 60)).padStart(2, '0')}:
+                {String(timerSecondsLeft % 60).padStart(2, '0')}
+              </span>
+              <button
+                type="button"
+                onClick={() => setTimerRunning(!timerRunning)}
+                className="px-2.5 py-1 font-semibold rounded bg-emerald-600 hover:bg-emerald-500 text-white cursor-pointer"
+              >
+                {timerRunning ? 'Pause Timer' : 'Start Timer'}
+              </button>
+              <button
+                type="button"
+                onClick={() =>
+                  handleLaunchFocusedWorkspaceAction(activeFocusedFeature.category)
+                }
+                className="px-2.5 py-1 font-semibold rounded border border-blue-500/40 bg-blue-500/10 text-blue-600 dark:text-blue-300 hover:bg-blue-500/20 cursor-pointer"
+              >
+                Launch {activeFocusedFeature.category} Action →
+              </button>
+              {activeTab !== 'Focus Mode' && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectNavTab('Focus Mode')}
+                  className="px-2.5 py-1 font-semibold rounded border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 cursor-pointer"
+                >
+                  + Add Particular Feature
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => {
+                  setFocusModeEnabled(false);
+                  setDistractionFreeLock(false);
+                  setTimerRunning(false);
+                }}
+                className="text-slate-500 hover:text-rose-500 font-medium cursor-pointer"
+              >
+                Exit Focus
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Body Content */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-6 py-8">
@@ -1295,6 +1586,16 @@ function WorkspaceApp() {
                       >
                         <Users className="w-3.5 h-3.5" />
                         <span>Switch / Create Account</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          setFocusModeEnabled(true);
+                          handleSelectNavTab('Focus Mode');
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 bg-emerald-500/10 rounded-lg hover:bg-emerald-500/20 cursor-pointer"
+                      >
+                        <Crosshair className="w-3.5 h-3.5" />
+                        <span>Focus Mode · Add Feature</span>
                       </button>
                       <button
                         onClick={() => {
@@ -1463,6 +1764,14 @@ function WorkspaceApp() {
                     </div>
                   </div>
 
+                  {/* Owner Live Student Logins, Active Users, Time Spent & User Information (Owner Only) */}
+                  {isOwnerAdmin && (
+                    <OwnerDashboardUserMonitor
+                      authFetch={authFetch}
+                      onOpenAdminConsole={() => handleSelectNavTab('Admin')}
+                    />
+                  )}
+
                   {/* 3-Month Application Progress Trends Visualization (Recharts) */}
                   <ApplicationProgressTrendsSection
                     applications={bundle.applications}
@@ -1613,6 +1922,32 @@ function WorkspaceApp() {
                     </div>
                   </div>
                 </div>
+              )}
+
+              {/* 1B. FOCUS MODE & ADD PARTICULAR FEATURE STUDIO */}
+              {activeTab === 'Focus Mode' && (
+                <FocusModeStudio
+                  bundle={bundle}
+                  authFetch={authFetch}
+                  focusModeEnabled={focusModeEnabled}
+                  onToggleFocusMode={setFocusModeEnabled}
+                  distractionFreeLock={distractionFreeLock}
+                  onToggleDistractionFreeLock={setDistractionFreeLock}
+                  activeFocusedFeature={activeFocusedFeature}
+                  onSelectFocusedFeature={setActiveFocusedFeature}
+                  onLaunchWorkspaceAction={handleLaunchFocusedWorkspaceAction}
+                  onGoogleLogin={signInWithGoogle}
+                  timerSecondsLeft={timerSecondsLeft}
+                  timerRunning={timerRunning}
+                  onStartPauseTimer={() => setTimerRunning((r) => !r)}
+                  onResetTimer={(mins) => {
+                    setTimerRunning(false);
+                    setTimerSecondsLeft(
+                      (mins || activeFocusedFeature?.targetMinutes || 25) * 60
+                    );
+                  }}
+                  onCompleteSprint={handleCompleteFocusSprint}
+                />
               )}
 
               {/* 2. PERSONALIZED DISCOVER & CATEGORY FEEDS */}
@@ -1991,39 +2326,87 @@ function WorkspaceApp() {
               {/* 10. SETTINGS */}
               {activeTab === 'Settings' && (
                 <div className="max-w-2xl space-y-6">
+                  {settingsSavedNotice && (
+                    <div className="p-3.5 rounded-xl border border-emerald-500/40 bg-emerald-500/10 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                      {settingsSavedNotice}
+                    </div>
+                  )}
+
+                  {/* Day / Night (Light / Dark) Appearance Switcher */}
+                  <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                          Appearance · Day & Night Mode
+                        </h2>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          Switch between crisp Day (Light) mode and high-contrast Night (Dark) mode across the entire workspace.
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
+                        <button
+                          type="button"
+                          onClick={() => setDarkMode(false)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                            !darkMode
+                              ? 'bg-white text-slate-900 shadow-xs'
+                              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <Sun className="w-3.5 h-3.5 text-amber-500" />
+                          <span>Day (Light)</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setDarkMode(true)}
+                          className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md transition-colors cursor-pointer ${
+                            darkMode
+                              ? 'bg-slate-800 text-white shadow-xs'
+                              : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                          }`}
+                        >
+                          <Moon className="w-3.5 h-3.5 text-blue-400" />
+                          <span>Night (Dark)</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
                   <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-4">
                     <h2 className="text-base font-bold text-slate-900 dark:text-white">
                       Notification & Digest Preferences
                     </h2>
                     <div className="space-y-3 text-xs">
-                      <label className="flex items-center justify-between py-2 border-b border-slate-200 dark:border-slate-800">
+                      <label className="flex items-center justify-between py-2 border-b border-slate-200 dark:border-slate-800 cursor-pointer">
                         <span>Email Alerts for 90%+ Match Opportunities</span>
                         <input
                           type="checkbox"
-                          checked={bundle.profile.notificationEmail}
+                          checked={Boolean(bundle.profile.notificationEmail)}
                           onChange={(e) =>
                             handleSaveProfile({ notificationEmail: e.target.checked })
                           }
+                          className="cursor-pointer"
                         />
                       </label>
-                      <label className="flex items-center justify-between py-2 border-b border-slate-200 dark:border-slate-800">
+                      <label className="flex items-center justify-between py-2 border-b border-slate-200 dark:border-slate-800 cursor-pointer">
                         <span>In-App Urgent Deadline Reminders (1–3 days)</span>
                         <input
                           type="checkbox"
-                          checked={bundle.profile.notificationInApp}
+                          checked={Boolean(bundle.profile.notificationInApp)}
                           onChange={(e) =>
                             handleSaveProfile({ notificationInApp: e.target.checked })
                           }
+                          className="cursor-pointer"
                         />
                       </label>
                       <div className="flex items-center justify-between py-2">
                         <span>Alert Frequency</span>
                         <select
-                          value={bundle.profile.notificationFrequency}
+                          value={bundle.profile.notificationFrequency || 'Immediate'}
                           onChange={(e) =>
                             handleSaveProfile({ notificationFrequency: e.target.value })
                           }
-                          className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900"
+                          className="px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 text-slate-900 dark:text-white cursor-pointer"
                         >
                           <option value="Immediate">Immediate Real-Time</option>
                           <option value="Daily Digest">Daily Digest</option>

@@ -1,0 +1,267 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. Hardened Global Helpers
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function isBootstrappedOwner() {
+      return isVerifiedUser() && request.auth.token.email == 'kartikchoudhary18122005@gmail.com';
+    }
+
+    function isAdmin() {
+      return isVerifiedUser() && (
+        exists(/databases/$(database)/documents/admins/$(request.auth.uid)) ||
+        isBootstrappedOwner()
+      );
+    }
+
+    // 3. Entity Validation Blueprints (Synchronized with firebase-blueprint.json)
+    function isValidFocusFeature(data) {
+      return data.keys().hasAll([
+          'title',
+          'category',
+          'description',
+          'priority',
+          'status',
+          'targetMinutes',
+          'completedMinutes',
+          'checklistItems',
+          'completedChecklistCount',
+          'ownerId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'title',
+          'category',
+          'description',
+          'priority',
+          'status',
+          'targetMinutes',
+          'completedMinutes',
+          'checklistItems',
+          'completedChecklistCount',
+          'ownerId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 140 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 40 &&
+        data.category in [
+          'Hackathons',
+          'Internships',
+          'Resume & Profile',
+          'Roadmaps',
+          'Coding & GitHub',
+          'Applications',
+          'Custom Feature'
+        ] &&
+        data.description is string && data.description.size() >= 1 && data.description.size() <= 1000 &&
+        data.priority is string && data.priority.size() >= 1 && data.priority.size() <= 20 &&
+        data.priority in ['High', 'Medium', 'Critical'] &&
+        data.status is string && data.status.size() >= 1 && data.status.size() <= 20 &&
+        data.status in ['active', 'completed', 'archived'] &&
+        data.targetMinutes is int && data.targetMinutes >= 5 && data.targetMinutes <= 480 &&
+        data.completedMinutes is int && data.completedMinutes >= 0 && data.completedMinutes <= 100000 &&
+        data.checklistItems is list && data.checklistItems.size() <= 20 &&
+        (data.checklistItems.size() == 0 || (data.checklistItems[0] is string && data.checklistItems[0].size() <= 240)) &&
+        data.completedChecklistCount is int && data.completedChecklistCount >= 0 && data.completedChecklistCount <= 20 &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidFocusSession(data) {
+      return data.keys().hasAll([
+          'featureId',
+          'featureTitle',
+          'durationMinutes',
+          'notes',
+          'status',
+          'ownerId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.keys().hasOnly([
+          'featureId',
+          'featureTitle',
+          'durationMinutes',
+          'notes',
+          'status',
+          'ownerId',
+          'createdAt',
+          'updatedAt'
+        ]) &&
+        data.featureId is string && data.featureId.size() >= 1 && data.featureId.size() <= 128 &&
+        data.featureId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.featureTitle is string && data.featureTitle.size() >= 1 && data.featureTitle.size() <= 140 &&
+        data.durationMinutes is int && data.durationMinutes >= 1 && data.durationMinutes <= 480 &&
+        data.notes is string && data.notes.size() <= 600 &&
+        data.status is string && data.status.size() >= 1 && data.status.size() <= 20 &&
+        data.status in ['in_progress', 'completed'] &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 &&
+        data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidAdminRole(data) {
+      return data.keys().hasAll(['uid', 'role', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'role', 'createdAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 &&
+        data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.role is string && data.role.size() == 5 && data.role == 'ADMIN' &&
+        data.createdAt is timestamp;
+    }
+
+    // 4. Collection: /focus_features/{featureId}
+    match /focus_features/{featureId} {
+      allow get: if isSignedIn() && isValidId(featureId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(featureId) &&
+        isValidFocusFeature(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+
+      allow update: if (
+        isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(featureId) &&
+        isValidFocusFeature(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (existing().status != 'archived' || isAdmin()) &&
+        (
+          isAdmin() ||
+          // Action 1: Update Focus Progress & Checklist
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'completedMinutes',
+              'checklistItems',
+              'completedChecklistCount',
+              'status',
+              'updatedAt'
+            ])
+          ) ||
+          // Action 2: Edit Feature Specification Details
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'title',
+              'category',
+              'description',
+              'priority',
+              'targetMinutes',
+              'checklistItems',
+              'completedChecklistCount',
+              'status',
+              'updatedAt'
+            ])
+          )
+        )
+      );
+
+      allow delete: if isSignedIn() && isVerifiedUser() && isValidId(featureId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 5. Collection: /focus_sessions/{sessionId}
+    match /focus_sessions/{sessionId} {
+      allow get: if isSignedIn() && isValidId(sessionId) && (existing().ownerId == request.auth.uid || isAdmin());
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+
+      allow create: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(sessionId) &&
+        isValidFocusSession(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/focus_features/$(incoming().featureId)) &&
+        get(/databases/$(database)/documents/focus_features/$(incoming().featureId)).data.ownerId == request.auth.uid;
+
+      allow update: if (
+        isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(sessionId) &&
+        isValidFocusSession(incoming()) &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().featureId == existing().featureId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        (existing().status != 'completed' || isAdmin()) &&
+        (
+          isAdmin() ||
+          (
+            existing().ownerId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly([
+              'durationMinutes',
+              'notes',
+              'status',
+              'updatedAt'
+            ])
+          )
+        )
+      );
+
+      allow delete: if isSignedIn() && isVerifiedUser() && isValidId(sessionId) && (existing().ownerId == request.auth.uid || isAdmin());
+    }
+
+    // 6. Collection: /admins/{adminId}
+    match /admins/{adminId} {
+      allow get: if isSignedIn() && isValidId(adminId) && (request.auth.uid == adminId || isAdmin());
+      allow list: if false;
+
+      allow create: if isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(adminId) &&
+        isValidAdminRole(incoming()) &&
+        incoming().uid == adminId &&
+        incoming().createdAt == request.time &&
+        isAdmin();
+
+      allow update: if (
+        isSignedIn() &&
+        isVerifiedUser() &&
+        isValidId(adminId) &&
+        isValidAdminRole(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        isAdmin() &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['role'])
+      );
+
+      allow delete: if isSignedIn() && isVerifiedUser() && isValidId(adminId) && isAdmin();
+    }
+  }
+}

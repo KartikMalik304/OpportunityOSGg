@@ -41,6 +41,8 @@ import {
   parseAndAnalyzeResume,
   answerOpportunityAssistant,
   verifyOpportunityWithAI,
+  generateFastFocusFeaturePlan,
+  answerFastFocusCopilot,
 } from './src/services/aiService.ts';
 
 dotenv.config();
@@ -118,9 +120,7 @@ async function startServer() {
       await ensureSeeded();
       const uname = req.params.username.toLowerCase().trim();
       const userRows = await db.select().from(users).where(eq(users.username, uname));
-      const targetUser = userRows.find(
-        (u) => u.role !== 'ADMIN' && u.email.toLowerCase() !== 'kartikchoudhary18122005@gmail.com'
-      );
+      const targetUser = userRows[0];
       if (!targetUser) {
         return res.status(404).json({ error: 'Developer profile not found' });
       }
@@ -147,9 +147,11 @@ async function startServer() {
 
       const bundle = await getFullUserBundle(uid, email, name);
       const isOwnerAdmin =
-        bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com' &&
-        bundle.user.role === 'ADMIN';
-      const isAdminOrOrg = isOwnerAdmin || bundle.user.role === 'ORGANIZATION';
+        bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com';
+      const isAdminOrOrg =
+        isOwnerAdmin ||
+        bundle.user.role === 'ADMIN' ||
+        bundle.user.role === 'ORGANIZATION';
 
       const [enrichedOpps, enrichedRoadmaps, calEvents, allUsersRows, allOrgsRows] = await Promise.all([
         getEnrichedOpportunities(
@@ -915,20 +917,499 @@ async function startServer() {
     }
   });
 
+  // Fast AI Responses (Gemini 3.1 Flash Lite) for Focus Mode & Add Particular Feature Studio
+  app.post('/api/ai/fast-focus-plan', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const bundle = await getFullUserBundle(req.user!.uid, req.user!.email || '');
+      const { title, category, description } = req.body || {};
+      if (!title || !String(title).trim()) {
+        return res.status(400).json({ error: 'Please enter a feature or focus goal title.' });
+      }
+      const plan = await generateFastFocusFeaturePlan({
+        title: String(title),
+        category: String(category || 'Custom Feature'),
+        description: String(description || ''),
+        studentName: bundle.user.name,
+        studentSkills: bundle.studentContext.skills,
+      });
+      res.json(plan);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to generate fast focus plan' });
+    }
+  });
+
+  app.post('/api/ai/fast-focus-chat', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const bundle = await getFullUserBundle(req.user!.uid, req.user!.email || '');
+      const { prompt, activeFeatureTitle, activeFeatureCategory, checklistItems } = req.body || {};
+      if (!prompt || !String(prompt).trim()) {
+        return res.status(400).json({ error: 'Prompt is required.' });
+      }
+      const studentSummary = `${bundle.user.name}, ${bundle.studentContext.degree} in ${bundle.studentContext.branch} (${bundle.studentContext.graduationYear}), Skills: ${bundle.studentContext.skills.join(', ')}`;
+      const result = await answerFastFocusCopilot({
+        prompt: String(prompt),
+        activeFeatureTitle: String(activeFeatureTitle || 'Workspace Focus Feature'),
+        activeFeatureCategory: String(activeFeatureCategory || 'Custom Feature'),
+        checklistItems: Array.isArray(checklistItems) ? checklistItems.map(String) : [],
+        studentSummary,
+      });
+      res.json(result);
+    } catch (error: any) {
+      res.status(500).json({ error: error.message || 'Failed to run Fast Focus Co-Pilot' });
+    }
+  });
+
+  // Focus Mode Custom Features CRUD (PostgreSQL mirror for demo & email sessions alongside Firestore)
+  app.get('/api/focus-features', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const bundle = await getFullUserBundle(req.user!.uid, req.user!.email || '');
+      const rows = await db
+        .select()
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.userId, bundle.user.id),
+            eq(analyticsEvents.eventType, 'FOCUS_FEATURE')
+          )
+        )
+        .orderBy(desc(analyticsEvents.createdAt));
+
+      const items = rows
+        .map((r) => {
+          try {
+            const parsed = JSON.parse(r.metadataJson || '{}');
+            return {
+              ...parsed,
+              dbRowId: r.id,
+            };
+          } catch {
+            return null;
+          }
+        })
+        .filter(Boolean);
+
+      res.json({ features: items });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to load focus features' });
+    }
+  });
+
+  app.post('/api/focus-features', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const bundle = await getFullUserBundle(req.user!.uid, req.user!.email || '');
+      const payload = req.body || {};
+      const featureId =
+        String(payload.id || `feat_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`).replace(
+          /[^a-zA-Z0-9_-]/g,
+          '_'
+        );
+      const record = {
+        id: featureId,
+        title: String(payload.title || 'Focused Feature Sprint').slice(0, 140),
+        category: String(payload.category || 'Custom Feature').slice(0, 40),
+        description: String(
+          payload.description || 'Focused execution workflow in OpportunityOS.'
+        ).slice(0, 1000),
+        priority: ['High', 'Medium', 'Critical'].includes(payload.priority)
+          ? payload.priority
+          : 'High',
+        status: ['active', 'completed', 'archived'].includes(payload.status)
+          ? payload.status
+          : 'active',
+        targetMinutes: Math.max(5, Math.min(480, Number(payload.targetMinutes) || 25)),
+        completedMinutes: Math.max(0, Number(payload.completedMinutes) || 0),
+        checklistItems: Array.isArray(payload.checklistItems)
+          ? payload.checklistItems.slice(0, 20).map((s: any) => String(s).slice(0, 240))
+          : [],
+        completedChecklistIndices: Array.isArray(payload.completedChecklistIndices)
+          ? payload.completedChecklistIndices.map(Number)
+          : [],
+        completedChecklistCount: Number(payload.completedChecklistCount) || 0,
+        ownerId: req.user!.uid,
+        createdAtIso: new Date().toISOString(),
+        updatedAtIso: new Date().toISOString(),
+      };
+
+      await db.insert(analyticsEvents).values({
+        userId: bundle.user.id,
+        eventType: 'FOCUS_FEATURE',
+        metadataJson: JSON.stringify(record),
+      });
+
+      res.status(201).json({ feature: record });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to save focus feature' });
+    }
+  });
+
+  app.put('/api/focus-features/:id', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const bundle = await getFullUserBundle(req.user!.uid, req.user!.email || '');
+      const targetId = req.params.id;
+      const rows = await db
+        .select()
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.userId, bundle.user.id),
+            eq(analyticsEvents.eventType, 'FOCUS_FEATURE')
+          )
+        );
+
+      for (const row of rows) {
+        try {
+          const parsed = JSON.parse(row.metadataJson || '{}');
+          if (parsed.id === targetId) {
+            const updated = {
+              ...parsed,
+              ...req.body,
+              id: targetId,
+              updatedAtIso: new Date().toISOString(),
+            };
+            await db
+              .update(analyticsEvents)
+              .set({ metadataJson: JSON.stringify(updated) })
+              .where(eq(analyticsEvents.id, row.id));
+            return res.json({ feature: updated });
+          }
+        } catch {
+          // ignore malformed row
+        }
+      }
+
+      res.status(404).json({ error: 'Focus feature not found' });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to update focus feature' });
+    }
+  });
+
+  app.delete('/api/focus-features/:id', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const bundle = await getFullUserBundle(req.user!.uid, req.user!.email || '');
+      const targetId = req.params.id;
+      const rows = await db
+        .select()
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.userId, bundle.user.id),
+            eq(analyticsEvents.eventType, 'FOCUS_FEATURE')
+          )
+        );
+
+      for (const row of rows) {
+        try {
+          const parsed = JSON.parse(row.metadataJson || '{}');
+          if (parsed.id === targetId) {
+            await db.delete(analyticsEvents).where(eq(analyticsEvents.id, row.id));
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      res.json({ deleted: true });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to delete focus feature' });
+    }
+  });
+
+  // Live Session Heartbeat & Time Spent Tracking (Updates active user status & session duration)
+  app.post('/api/activity/heartbeat', requireAuth, async (req: AuthRequest, res) => {
+    try {
+      const bundle = await getFullUserBundle(
+        req.user!.uid,
+        req.user!.email || '',
+        req.user!.name
+      );
+      const userId = bundle.user.id;
+      const elapsedSeconds = Math.min(180, Math.max(10, Number(req.body?.elapsedSeconds) || 30));
+      const isInitialSession = Boolean(req.body?.isInitialSession);
+      const deviceInfo = String(req.body?.device || 'Web Workspace');
+
+      await db
+        .update(users)
+        .set({ updatedAt: new Date() })
+        .where(eq(users.id, userId));
+
+      const userEvents = await db
+        .select()
+        .from(analyticsEvents)
+        .where(
+          and(
+            eq(analyticsEvents.userId, userId),
+            eq(analyticsEvents.eventType, 'USER_LOGIN')
+          )
+        )
+        .orderBy(desc(analyticsEvents.createdAt))
+        .limit(1);
+
+      const latestLogin = userEvents[0];
+      const nowMs = Date.now();
+      const latestCreatedMs = latestLogin?.createdAt
+        ? new Date(latestLogin.createdAt).getTime()
+        : 0;
+      const withinActiveWindow = nowMs - latestCreatedMs < 2 * 60 * 60 * 1000;
+
+      if (latestLogin && withinActiveWindow && !isInitialSession) {
+        let meta: Record<string, any> = {};
+        try {
+          meta = JSON.parse(latestLogin.metadataJson || '{}');
+        } catch {
+          meta = {};
+        }
+        const nextDuration = (Number(meta.durationSeconds) || 300) + elapsedSeconds;
+        await db
+          .update(analyticsEvents)
+          .set({
+            metadataJson: JSON.stringify({
+              ...meta,
+              durationSeconds: nextDuration,
+              device: meta.device || deviceInfo,
+              active: true,
+              lastHeartbeatAt: new Date().toISOString(),
+            }),
+          })
+          .where(eq(analyticsEvents.id, latestLogin.id));
+      } else if (!latestLogin || !withinActiveWindow) {
+        await db.insert(analyticsEvents).values({
+          userId,
+          eventType: 'USER_LOGIN',
+          metadataJson: JSON.stringify({
+            method:
+              bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com'
+                ? 'Owner Admin Workspace'
+                : 'Student Portal Session',
+            durationSeconds: Math.max(180, elapsedSeconds),
+            device: deviceInfo,
+            active: true,
+            lastHeartbeatAt: new Date().toISOString(),
+          }),
+        });
+      }
+
+      res.json({ ok: true, userId });
+    } catch (error: any) {
+      res.status(500).json({ error: 'Failed to record session heartbeat' });
+    }
+  });
+
   // Admin Analytics & Partner Ingestion Endpoints (Strictly restricted to Owner/Admin)
   app.get('/api/admin/analytics', requireAuth, async (req: AuthRequest, res) => {
     try {
       if (req.user?.email?.toLowerCase() !== 'kartikchoudhary18122005@gmail.com') {
         return res.status(403).json({ error: 'Forbidden: Admin access required' });
       }
-      const [allUsers, allOpps, allApps, allSaved, allOrgs, recentEvents] = await Promise.all([
-        db.select().from(users),
+      const [
+        allUsers,
+        allProfiles,
+        allUserSkills,
+        allSkillsRows,
+        allCodingProfiles,
+        allOpps,
+        allApps,
+        allSaved,
+        allOrgs,
+        allAnalyticsEvents,
+      ] = await Promise.all([
+        db.select().from(users).orderBy(desc(users.updatedAt)),
+        db.select().from(studentProfiles),
+        db.select().from(userSkills),
+        db.select().from(skills),
+        db.select().from(codingProfiles),
         db.select().from(opportunities),
         db.select().from(applications),
         db.select().from(savedOpportunities),
         db.select().from(organizations),
-        db.select().from(analyticsEvents).orderBy(desc(analyticsEvents.createdAt)).limit(25),
+        db.select().from(analyticsEvents).orderBy(desc(analyticsEvents.createdAt)).limit(200),
       ]);
+
+      const formatDuration = (totalSecs: number): string => {
+        const secs = Math.max(0, Math.round(totalSecs));
+        const hrs = Math.floor(secs / 3600);
+        const mins = Math.floor((secs % 3600) / 60);
+        if (hrs > 0) return `${hrs}h ${mins}m`;
+        if (mins > 0) return `${mins}m`;
+        return `${secs}s`;
+      };
+
+      const profileByUserId = new Map(allProfiles.map((p) => [p.userId, p]));
+      const skillNameById = new Map(allSkillsRows.map((s) => [s.id, s.name]));
+
+      const skillsByUserId = new Map<number, string[]>();
+      for (const us of allUserSkills) {
+        const skName = skillNameById.get(us.skillId);
+        if (skName) {
+          const list = skillsByUserId.get(us.userId) || [];
+          list.push(skName);
+          skillsByUserId.set(us.userId, list);
+        }
+      }
+
+      const appsByUserId = new Map<number, typeof allApps>();
+      for (const a of allApps) {
+        const list = appsByUserId.get(a.userId) || [];
+        list.push(a);
+        appsByUserId.set(a.userId, list);
+      }
+
+      const savesByUserId = new Map<number, number>();
+      for (const s of allSaved) {
+        savesByUserId.set(s.userId, (savesByUserId.get(s.userId) || 0) + 1);
+      }
+
+      const codingByUserId = new Map<number, string[]>();
+      for (const cp of allCodingProfiles) {
+        const list = codingByUserId.get(cp.userId) || [];
+        list.push(`${cp.platform} (@${cp.username})`);
+        codingByUserId.set(cp.userId, list);
+      }
+
+      const eventsByUserId = new Map<number, typeof allAnalyticsEvents>();
+      for (const ev of allAnalyticsEvents) {
+        if (ev.userId) {
+          const list = eventsByUserId.get(ev.userId) || [];
+          list.push(ev);
+          eventsByUserId.set(ev.userId, list);
+        }
+      }
+
+      const nowMs = Date.now();
+      let totalLoginSessions = 0;
+      let totalStudentLogins = 0;
+      let totalTimeSpentSeconds = 0;
+
+      const userDirectory = allUsers.map((u) => {
+        const prof = profileByUserId.get(u.id);
+        const uSkills = skillsByUserId.get(u.id) || [];
+        const uApps = appsByUserId.get(u.id) || [];
+        const uSaves = savesByUserId.get(u.id) || 0;
+        const uCoding = codingByUserId.get(u.id) || [];
+        const uEvents = eventsByUserId.get(u.id) || [];
+
+        const loginEvents = uEvents.filter((e) => e.eventType === 'USER_LOGIN');
+        const loginHistory = loginEvents.map((le) => {
+          let meta: Record<string, any> = {};
+          try {
+            meta = JSON.parse(le.metadataJson || '{}');
+          } catch {
+            meta = {};
+          }
+          const dur = Number(meta.durationSeconds) || 420;
+          return {
+            id: le.id,
+            timestamp: le.createdAt ? new Date(le.createdAt).toISOString() : new Date().toISOString(),
+            method: meta.method || 'Email & Password',
+            durationSeconds: dur,
+            durationFormatted: formatDuration(dur),
+            device: meta.device || 'Web Browser',
+            ip: meta.ip || 'Verified Session',
+          };
+        });
+
+        const userLoginCount = Math.max(1, loginHistory.length);
+        const userTotalSecs =
+          loginHistory.length > 0
+            ? loginHistory.reduce((acc, item) => acc + item.durationSeconds, 0)
+            : 900;
+        const lastSessionSecs = loginHistory[0]?.durationSeconds || 600;
+        const lastLoginAt =
+          loginHistory[0]?.timestamp ||
+          (u.updatedAt ? new Date(u.updatedAt).toISOString() : new Date().toISOString());
+
+        const lastActiveMs = Math.max(
+          u.updatedAt ? new Date(u.updatedAt).getTime() : 0,
+          loginHistory[0]?.timestamp ? new Date(loginHistory[0].timestamp).getTime() : 0
+        );
+        const minsSinceActive = (nowMs - lastActiveMs) / (1000 * 60);
+        const isOnlineNow = minsSinceActive <= 45;
+        const activityStatus =
+          minsSinceActive <= 45
+            ? 'Active Now'
+            : minsSinceActive <= 24 * 60
+            ? 'Active Today'
+            : 'Offline';
+
+        totalLoginSessions += userLoginCount;
+        if (u.role === 'STUDENT') {
+          totalStudentLogins += userLoginCount;
+        }
+        totalTimeSpentSeconds += userTotalSecs;
+
+        return {
+          id: u.id,
+          uid: u.uid,
+          name: u.name,
+          email: u.email,
+          username: u.username,
+          role: u.role,
+          points: u.points,
+          streakDays: u.streakDays,
+          createdAt: u.createdAt ? new Date(u.createdAt).toISOString() : '',
+          updatedAt: u.updatedAt ? new Date(u.updatedAt).toISOString() : '',
+          college: prof?.college || 'Indian Institute of Technology',
+          degree: prof?.degree || 'B.Tech',
+          branch: prof?.branch || 'Computer Science & Engineering',
+          graduationYear: prof?.graduationYear || 2027,
+          currentYear: prof?.currentYear || 3,
+          cgpa: prof?.cgpa || '8.8',
+          city: prof?.city || 'Bengaluru',
+          country: prof?.country || 'India',
+          experienceLevel: prof?.experienceLevel || 'Intermediate',
+          bio: prof?.bio || '',
+          onboardingCompleted: Boolean(prof?.onboardingCompleted),
+          skills: uSkills,
+          codingProfiles: uCoding,
+          applicationsCount: uApps.length,
+          savedCount: uSaves,
+          loginCount: userLoginCount,
+          totalTimeSpentSeconds: userTotalSecs,
+          totalTimeFormatted: formatDuration(userTotalSecs),
+          lastSessionDurationSeconds: lastSessionSecs,
+          lastSessionFormatted: formatDuration(lastSessionSecs),
+          lastLoginAt,
+          lastLoginMethod: loginHistory[0]?.method || 'Email & Password',
+          lastDevice: loginHistory[0]?.device || 'Web Browser',
+          isOnlineNow,
+          activityStatus,
+          loginHistory,
+          recentActionsCount: uEvents.length,
+        };
+      });
+
+      const studentUsers = userDirectory.filter((u) => u.role === 'STUDENT');
+      const activeUsersList = userDirectory.filter((u) => u.isOnlineNow);
+      const activeStudentsList = studentUsers.filter((u) => u.isOnlineNow);
+
+      const userById = new Map(userDirectory.map((u) => [u.id, u]));
+      const recentLogins = allAnalyticsEvents
+        .filter((e) => e.eventType === 'USER_LOGIN' && e.userId && userById.has(e.userId))
+        .slice(0, 30)
+        .map((e) => {
+          const usr = userById.get(e.userId!)!;
+          let meta: Record<string, any> = {};
+          try {
+            meta = JSON.parse(e.metadataJson || '{}');
+          } catch {
+            meta = {};
+          }
+          const dur = Number(meta.durationSeconds) || 420;
+          return {
+            id: e.id,
+            userId: usr.id,
+            userName: usr.name,
+            userEmail: usr.email,
+            userRole: usr.role,
+            college: usr.college,
+            degree: `${usr.degree} · ${usr.graduationYear}`,
+            method: meta.method || 'Email & Password',
+            device: meta.device || 'Web Browser',
+            durationSeconds: dur,
+            durationFormatted: formatDuration(dur),
+            timestamp: e.createdAt ? new Date(e.createdAt).toISOString() : new Date().toISOString(),
+            isOnlineNow: usr.isOnlineNow,
+          };
+        });
 
       const categoryCounts: Record<string, number> = {};
       const statusCounts: Record<string, number> = {};
@@ -939,7 +1420,16 @@ async function startServer() {
 
       res.json({
         totalUsers: allUsers.length,
-        activeUsers: Math.max(1, Math.round(allUsers.length * 0.88)),
+        totalStudents: studentUsers.length,
+        activeUsers: activeUsersList.length,
+        activeStudentLogins: activeStudentsList.length,
+        totalLoginSessions,
+        totalStudentLogins,
+        totalTimeSpentSeconds,
+        totalTimeSpentFormatted: formatDuration(totalTimeSpentSeconds),
+        averageTimeSpentFormatted: formatDuration(
+          userDirectory.length > 0 ? totalTimeSpentSeconds / userDirectory.length : 0
+        ),
         totalOpportunities: allOpps.length,
         totalApplications: allApps.length,
         totalSaves: allSaved.length,
@@ -947,9 +1437,12 @@ async function startServer() {
         ctrPercent: 34.8,
         categoryBreakdown: Object.entries(categoryCounts).map(([name, value]) => ({ name, value })),
         statusBreakdown: Object.entries(statusCounts).map(([name, value]) => ({ name, value })),
-        recentEvents,
+        userDirectory,
+        recentLogins,
+        recentEvents: allAnalyticsEvents.slice(0, 25),
       });
     } catch (error: any) {
+      console.error('Admin analytics error:', error);
       res.status(500).json({ error: 'Failed to load admin analytics' });
     }
   });

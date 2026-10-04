@@ -1,0 +1,194 @@
+{
+  "entities": {
+    "FocusFeature": {
+      "title": "FocusFeature",
+      "description": "A user-created custom focus feature or workflow module pinned in Focus Mode.",
+      "type": "object",
+      "properties": {
+        "title": {
+          "type": "string",
+          "description": "Name of the particular feature or focus workflow.",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "category": {
+          "type": "string",
+          "description": "Category or target module in OpportunityOS.",
+          "enum": [
+            "Hackathons",
+            "Internships",
+            "Resume & Profile",
+            "Roadmaps",
+            "Coding & GitHub",
+            "Applications",
+            "Custom Feature"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "description": "Detailed specification or objective for this focused feature.",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "priority": {
+          "type": "string",
+          "description": "Execution priority level.",
+          "enum": ["High", "Medium", "Critical"]
+        },
+        "status": {
+          "type": "string",
+          "description": "Lifecycle status of the focus feature.",
+          "enum": ["active", "completed", "archived"]
+        },
+        "targetMinutes": {
+          "type": "integer",
+          "description": "Target deep-work focus duration in minutes."
+        },
+        "completedMinutes": {
+          "type": "integer",
+          "description": "Cumulative minutes spent focusing on this feature."
+        },
+        "checklistItems": {
+          "type": "array",
+          "description": "Actionable sub-steps or feature checklist items (max 20 items, each string <= 240 chars)."
+        },
+        "completedChecklistCount": {
+          "type": "integer",
+          "description": "Count of completed checklist items."
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the feature owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the feature was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the feature was last updated."
+        }
+      },
+      "required": [
+        "title",
+        "category",
+        "description",
+        "priority",
+        "status",
+        "targetMinutes",
+        "completedMinutes",
+        "checklistItems",
+        "completedChecklistCount",
+        "ownerId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "FocusSession": {
+      "title": "FocusSession",
+      "description": "A completed or active timed Focus Mode sprint linked to a particular feature.",
+      "type": "object",
+      "properties": {
+        "featureId": {
+          "type": "string",
+          "description": "ID of the parent FocusFeature document.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "featureTitle": {
+          "type": "string",
+          "description": "Snapshot title of the focused feature.",
+          "minLength": 1,
+          "maxLength": 140
+        },
+        "durationMinutes": {
+          "type": "integer",
+          "description": "Duration of the focus sprint in minutes."
+        },
+        "notes": {
+          "type": "string",
+          "description": "Session accomplishment notes.",
+          "minLength": 0,
+          "maxLength": 600
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the focus sprint.",
+          "enum": ["in_progress", "completed"]
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the student.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the session started."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the session was updated."
+        }
+      },
+      "required": [
+        "featureId",
+        "featureTitle",
+        "durationMinutes",
+        "notes",
+        "status",
+        "ownerId",
+        "createdAt",
+        "updatedAt"
+      ]
+    },
+    "AdminRole": {
+      "title": "AdminRole",
+      "description": "Trusted admin role lookup document.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the administrator.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "role": {
+          "type": "string",
+          "description": "Administrator role designation.",
+          "enum": ["ADMIN"]
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the admin record was created."
+        }
+      },
+      "required": ["uid", "role", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/focus_features/{featureId}": {
+      "schema": { "$ref": "#/entities/FocusFeature" },
+      "description": "Stores user-defined Focus Mode features, checklists, and deep-work targets."
+    },
+    "/focus_sessions/{sessionId}": {
+      "schema": { "$ref": "#/entities/FocusSession" },
+      "description": "Stores timed Focus Mode sessions associated with a user's FocusFeature."
+    },
+    "/admins/{adminId}": {
+      "schema": { "$ref": "#/entities/AdminRole" },
+      "description": "Stores verified administrator UIDs for RBAC checks."
+    }
+  }
+}

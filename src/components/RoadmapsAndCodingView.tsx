@@ -23,7 +23,7 @@ interface RoadmapsViewProps {
   roadmaps: RoadmapItem[];
   opportunities: EnrichedOpportunity[];
   onUpdateStep: (roadmapId: number, stepId: number, status: string) => Promise<void>;
-  onGenerateAiRoadmap: (goalPrompt: string) => Promise<void>;
+  onGenerateAiRoadmap: (goalPrompt: string) => Promise<number | void>;
   onSelectOpportunity: (opp: EnrichedOpportunity) => void;
 }
 
@@ -39,6 +39,7 @@ export const RoadmapsView: React.FC<RoadmapsViewProps> = ({
   );
   const [aiGoalPrompt, setAiGoalPrompt] = useState('');
   const [generatingAi, setGeneratingAi] = useState(false);
+  const [generatedNotice, setGeneratedNotice] = useState<string | null>(null);
   const [updatingStepId, setUpdatingStepId] = useState<number | null>(null);
 
   const activeRoadmap =
@@ -47,9 +48,15 @@ export const RoadmapsView: React.FC<RoadmapsViewProps> = ({
   const handleGenerate = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!aiGoalPrompt.trim()) return;
+    const goalText = aiGoalPrompt.trim();
     setGeneratingAi(true);
+    setGeneratedNotice(null);
     try {
-      await onGenerateAiRoadmap(aiGoalPrompt.trim());
+      const newId = await onGenerateAiRoadmap(goalText);
+      if (typeof newId === 'number') {
+        setSelectedRoadmapId(newId);
+      }
+      setGeneratedNotice(`✓ Generated custom AI roadmap for "${goalText}" and selected it below.`);
       setAiGoalPrompt('');
     } finally {
       setGeneratingAi(false);
@@ -111,6 +118,11 @@ export const RoadmapsView: React.FC<RoadmapsViewProps> = ({
             {generatingAi ? 'Generating Roadmap...' : 'Generate AI Roadmap'}
           </button>
         </form>
+        {generatedNotice && (
+          <p className="mt-2.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
+            {generatedNotice}
+          </p>
+        )}
       </div>
 
       {/* Roadmap Selector Tabs */}

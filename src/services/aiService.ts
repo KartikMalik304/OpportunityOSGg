@@ -1,4 +1,4 @@
-import { GoogleGenAI, Type } from '@google/genai';
+import { GoogleGenAI, ThinkingLevel, Type } from '@google/genai';
 
 function getGeminiClient() {
   const apiKey = process.env.GEMINI_API_KEY;
@@ -13,6 +13,116 @@ function getGeminiClient() {
       },
     },
   });
+}
+
+export async function generateFastFocusFeaturePlan(params: {
+  title: string;
+  category: string;
+  description?: string;
+  studentName?: string;
+  studentSkills?: string[];
+}) {
+  const cleanTitle = (params.title || 'Custom Focus Feature').trim().slice(0, 140);
+  const cleanCategory = (params.category || 'Custom Feature').trim();
+  const ai = getGeminiClient();
+  if (ai) {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-flash-lite',
+        contents: `Generate a fast, actionable 5-step execution checklist and focus sprint blueprint for a student working on this particular feature/goal in Focus Mode:
+Feature Title: "${cleanTitle}"
+Category / Module: "${cleanCategory}"
+Context / Notes: "${params.description || 'Build and complete this focused workflow'}"
+Student Skills: "${(params.studentSkills || []).join(', ') || 'Software Engineering'}"`,
+        config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          systemInstruction:
+            'You are the OpportunityOS Fast Focus Mode Engine powered by Gemini 3.1 Flash Lite. Return concise, practical JSON with 5 actionable checklist steps (each under 120 characters) and a crisp summary.',
+          responseMimeType: 'application/json',
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              summary: { type: Type.STRING },
+              checklistItems: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+              },
+              quickTip: { type: Type.STRING },
+              suggestedDurationMinutes: { type: Type.INTEGER },
+            },
+            required: ['summary', 'checklistItems', 'quickTip', 'suggestedDurationMinutes'],
+          },
+        },
+      });
+      if (response.text) {
+        const parsed = JSON.parse(response.text.trim());
+        return {
+          summary: String(parsed.summary || '').slice(0, 900),
+          checklistItems: Array.isArray(parsed.checklistItems)
+            ? parsed.checklistItems.slice(0, 10).map((s: any) => String(s).slice(0, 220))
+            : [],
+          quickTip: String(parsed.quickTip || 'Work in a 25-minute distraction-free sprint.'),
+          suggestedDurationMinutes: Number(parsed.suggestedDurationMinutes) || 25,
+          modelUsed: 'gemini-3.1-flash-lite',
+        };
+      }
+    } catch (err) {
+      console.warn('Gemini fast focus plan fallback:', err);
+    }
+  }
+
+  return {
+    summary: `Focused execution sprint for "${cleanTitle}" (${cleanCategory}) — structured to eliminate context switching and ship measurable progress.`,
+    checklistItems: [
+      `Define exact success criteria and deliverables for ${cleanTitle}`,
+      `Gather required links, credentials, or repository references for ${cleanCategory}`,
+      `Complete core implementation / draft in a single 25-minute deep-work block`,
+      `Verify URL, eligibility, or code quality against OpportunityOS checklist`,
+      `Log completed milestone to your tracker and schedule next review`,
+    ],
+    quickTip: 'Lock Focus Mode ON for 25 minutes and complete the first two checklist items without switching tabs.',
+    suggestedDurationMinutes: 25,
+    modelUsed: 'gemini-3.1-flash-lite',
+  };
+}
+
+export async function answerFastFocusCopilot(params: {
+  prompt: string;
+  activeFeatureTitle: string;
+  activeFeatureCategory: string;
+  checklistItems: string[];
+  studentSummary: string;
+}) {
+  const ai = getGeminiClient();
+  if (ai) {
+    try {
+      const response = await ai.models.generateContent({
+        model: 'gemini-3.1-flash-lite',
+        contents: `Active Focus Feature: "${params.activeFeatureTitle}" (${params.activeFeatureCategory})
+Current Checklist: ${params.checklistItems.join(' | ') || 'None yet'}
+Student Profile: ${params.studentSummary}
+User Request: ${params.prompt}`,
+        config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
+          systemInstruction:
+            'You are the OpportunityOS Fast Focus Mode Co-Pilot running on Gemini 3.1 Flash Lite. Provide an ultra-fast, concise, high-signal response (under 100 words) with concrete bullet points tailored to the active feature.',
+        },
+      });
+      if (response.text) {
+        return {
+          reply: response.text.trim(),
+          modelUsed: 'gemini-3.1-flash-lite',
+        };
+      }
+    } catch (err) {
+      console.warn('Gemini fast focus copilot fallback:', err);
+    }
+  }
+
+  return {
+    reply: `Focus Sprint Advice for "${params.activeFeatureTitle}" (${params.activeFeatureCategory}):\n• Prioritize the next unchecked milestone in your list.\n• Break any blocker into a 15-minute sub-task.\n• Once finished, mark the step complete to sync your progress to Firebase Firestore & PostgreSQL.`,
+    modelUsed: 'gemini-3.1-flash-lite',
+  };
 }
 
 export async function generateOpportunityExplanation(params: {

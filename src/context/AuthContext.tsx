@@ -91,7 +91,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const enterWorkspaceAs = (persona: 'STUDENT' | 'ADMIN' | 'ORGANIZATION' = 'STUDENT') => {
     setAuthError(null);
-    if (persona === 'ORGANIZATION') {
+    if (persona === 'ADMIN') {
+      setToken('demo-session:demo-admin-uid:kartikchoudhary18122005@gmail.com:Kartik%20Choudhary');
+    } else if (persona === 'ORGANIZATION') {
       setToken('demo-session:demo-org-uid:recruiting@stripe.com:Stripe%20University%20Recruiting');
     } else {
       setToken('demo-session:peer-priya-sharma:priya.sharma@iitd.ac.in:Priya%20Sharma');

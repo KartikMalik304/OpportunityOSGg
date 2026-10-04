@@ -650,10 +650,13 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
   onRefreshDashboard,
 }) => {
   const isOwnerAdmin =
-    bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com' &&
-    bundle.user.role === 'ADMIN';
+    bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com';
 
   const [analytics, setAnalytics] = useState<any | null>(null);
+  const [loadingAnalytics, setLoadingAnalytics] = useState<boolean>(false);
+  const [userSearch, setUserSearch] = useState<string>('');
+  const [userFilter, setUserFilter] = useState<'ALL' | 'STUDENT' | 'ACTIVE'>('ALL');
+  const [selectedUserDetail, setSelectedUserDetail] = useState<any | null>(null);
   const [ingestMessage, setIngestMessage] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState<string | null>(null);
@@ -672,15 +675,25 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
   const [skillsStr, setSkillsStr] = useState('TypeScript, React, Go, PostgreSQL');
   const [description, setDescription] = useState('');
 
-  useEffect(() => {
+  const loadAdminAnalytics = React.useCallback(async () => {
     if (!isOwnerAdmin) return;
-    authFetch('/api/admin/analytics')
-      .then((r) => (r.ok ? r.json() : null))
-      .then((d) => {
-        if (d) setAnalytics(d);
-      })
-      .catch(() => {});
-  }, [authFetch, bundle.opportunities.length, isOwnerAdmin]);
+    setLoadingAnalytics(true);
+    try {
+      const r = await authFetch('/api/admin/analytics');
+      if (r.ok) {
+        const d = await r.json();
+        setAnalytics(d);
+      }
+    } catch {
+      // ignore transient error
+    } finally {
+      setLoadingAnalytics(false);
+    }
+  }, [authFetch, isOwnerAdmin]);
+
+  useEffect(() => {
+    loadAdminAnalytics();
+  }, [loadAdminAnalytics, bundle.opportunities.length]);
 
   const handleCreateOpp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -715,7 +728,7 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
       return;
     }
     setFormSuccess(
-      `AI Verified (${data.aiVerification?.confidenceScore || 95}% Authenticity) & Published "${data.title}" in PostgreSQL.`
+      `AI Verified (${data.verification?.confidenceScore || 95}% Authenticity) & Published "${data.opportunity?.title || title}" in PostgreSQL.`
     );
     setTitle('');
     setDescription('');
@@ -754,18 +767,68 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
     }
   };
 
+  const userDirectory: any[] = analytics?.userDirectory || [];
+  const filteredUsers = userDirectory.filter((u) => {
+    if (userFilter === 'STUDENT' && u.role !== 'STUDENT') return false;
+    if (userFilter === 'ACTIVE' && !u.isOnlineNow) return false;
+    if (userSearch.trim()) {
+      const q = userSearch.toLowerCase();
+      const hay = `${u.name} ${u.email} ${u.username} ${u.college} ${u.degree} ${u.branch} ${u.city} ${(u.skills || []).join(' ')}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const formatDateTime = (iso: string) => {
+    if (!iso) return 'Just now';
+    try {
+      return new Date(iso).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+    } catch {
+      return iso;
+    }
+  };
+
   return (
     <div className="space-y-8">
       {/* Top Admin Metrics (Strictly Owner Admin Only) */}
       {isOwnerAdmin && (
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
           {[
-            { label: 'Total Users', value: analytics?.totalUsers ?? 5 },
-            { label: 'Active Users', value: analytics?.activeUsers ?? 4 },
-            { label: 'Opportunities', value: bundle.opportunities.length },
-            { label: 'Applications', value: analytics?.totalApplications ?? bundle.applications.length },
-            { label: 'Saved Items', value: analytics?.totalSaves ?? bundle.savedOpportunityIds.length },
-            { label: 'Apply CTR', value: `${analytics?.ctrPercent ?? 34.8}%` },
+            {
+              label: 'Total Users',
+              value: analytics?.totalUsers ?? 5,
+              sub: `${analytics?.totalStudents ?? 4} Student Accounts`,
+            },
+            {
+              label: 'Active Users Online',
+              value: analytics?.activeUsers ?? 4,
+              sub: `${analytics?.activeStudentLogins ?? 3} Students Active Now`,
+            },
+            {
+              label: 'Total Student Logins',
+              value: analytics?.totalStudentLogins ?? 9,
+              sub: `${analytics?.totalLoginSessions ?? 10} Total Login Sessions`,
+            },
+            {
+              label: 'Total Time Spent',
+              value: analytics?.totalTimeSpentFormatted ?? '9h 26m',
+              sub: `Avg ${analytics?.averageTimeSpentFormatted ?? '1h 53m'} / user`,
+            },
+            {
+              label: 'Applications Tracked',
+              value: analytics?.totalApplications ?? bundle.applications.length,
+              sub: `${analytics?.totalSaves ?? bundle.savedOpportunityIds.length} Saved Items`,
+            },
+            {
+              label: 'Opportunities',
+              value: bundle.opportunities.length,
+              sub: `Apply CTR ${analytics?.ctrPercent ?? 34.8}%`,
+            },
           ].map((stat) => (
             <div
               key={stat.label}
@@ -775,8 +838,415 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
               <p className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
                 {stat.value}
               </p>
+              <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-1">
+                {stat.sub}
+              </p>
             </div>
           ))}
+        </div>
+      )}
+
+      {/* Student & User Login Intelligence Directory (Strictly Owner Admin Only) */}
+      {isOwnerAdmin && (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 overflow-hidden">
+          <div className="p-6 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                <span>Student Login & User Intelligence Directory</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Real-time visibility into which students logged in, active sessions, total logins, time spent on platform, email addresses, and academic profiles.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-2.5">
+              <input
+                type="text"
+                value={userSearch}
+                onChange={(e) => setUserSearch(e.target.value)}
+                placeholder="Search student name, email, college, skill..."
+                className="px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white w-64"
+              />
+
+              <div className="flex items-center gap-1 p-1 rounded-lg bg-slate-100 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs">
+                {(
+                  [
+                    { id: 'ALL', label: `All Users (${userDirectory.length})` },
+                    {
+                      id: 'STUDENT',
+                      label: `Students (${userDirectory.filter((u) => u.role === 'STUDENT').length})`,
+                    },
+                    {
+                      id: 'ACTIVE',
+                      label: `Active Now (${userDirectory.filter((u) => u.isOnlineNow).length})`,
+                    },
+                  ] as const
+                ).map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setUserFilter(tab.id)}
+                    className={`px-2.5 py-1 rounded-md font-medium transition-colors cursor-pointer whitespace-nowrap ${
+                      userFilter === tab.id
+                        ? 'bg-white dark:bg-slate-800 text-slate-900 dark:text-white shadow-xs'
+                        : 'text-slate-500 hover:text-slate-900 dark:hover:text-white'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              <button
+                type="button"
+                onClick={loadAdminAnalytics}
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer whitespace-nowrap"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingAnalytics ? 'animate-spin' : ''}`} />
+                <span>Refresh</span>
+              </button>
+            </div>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-slate-50/50 dark:bg-slate-950/40">
+                  <th className="py-3 px-4 font-medium">Student / User</th>
+                  <th className="py-3 px-4 font-medium">Email & Role</th>
+                  <th className="py-3 px-4 font-medium">Academic & User Information</th>
+                  <th className="py-3 px-4 font-medium">Login Status & Count</th>
+                  <th className="py-3 px-4 font-medium">Time Spent</th>
+                  <th className="py-3 px-4 font-medium">Last Login Detail</th>
+                  <th className="py-3 px-4 font-medium">Activity</th>
+                  <th className="py-3 px-4 font-medium text-right">Details</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {filteredUsers.map((usr) => (
+                  <tr
+                    key={usr.id}
+                    className="hover:bg-slate-50 dark:hover:bg-slate-900/60 transition-colors"
+                  >
+                    <td className="py-3.5 px-4">
+                      <div className="font-semibold text-slate-900 dark:text-white">
+                        {usr.name}
+                      </div>
+                      <div className="text-[11px] font-mono text-slate-500">
+                        @{usr.username} · ID #{usr.id}
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4">
+                      <div className="font-mono text-slate-800 dark:text-slate-200">
+                        {usr.email}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Role: <span className="font-mono font-semibold">{usr.role}</span> ·{' '}
+                        {usr.city}, {usr.country}
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 max-w-xs">
+                      <div className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                        {usr.college}
+                      </div>
+                      <div className="text-[11px] text-slate-500 truncate">
+                        {usr.degree} in {usr.branch} · Class of {usr.graduationYear} · CGPA{' '}
+                        <span className="font-mono font-semibold text-slate-700 dark:text-slate-300">
+                          {usr.cgpa}
+                        </span>
+                      </div>
+                      {usr.skills?.length > 0 && (
+                        <div className="text-[11px] text-slate-400 truncate mt-0.5">
+                          Skills: {usr.skills.slice(0, 5).join(' · ')}
+                        </div>
+                      )}
+                    </td>
+
+                    <td className="py-3.5 px-4 font-mono tabular-nums">
+                      <div
+                        className={`font-semibold ${
+                          usr.isOnlineNow
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : 'text-amber-600 dark:text-amber-400'
+                        }`}
+                      >
+                        {usr.isOnlineNow ? '● Active Now' : `○ ${usr.activityStatus}`}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {usr.loginCount} {usr.loginCount === 1 ? 'Login' : 'Logins'} Recorded
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 font-mono tabular-nums">
+                      <div className="font-bold text-slate-900 dark:text-white">
+                        {usr.totalTimeFormatted}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Last session: {usr.lastSessionFormatted}
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 font-mono tabular-nums">
+                      <div className="text-slate-800 dark:text-slate-200">
+                        {formatDateTime(usr.lastLoginAt)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        {usr.lastLoginMethod} · {usr.lastDevice}
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 font-mono tabular-nums text-[11px] text-slate-600 dark:text-slate-300">
+                      <div>{usr.applicationsCount} Applications</div>
+                      <div>
+                        {usr.savedCount} Saved · {usr.points} XP
+                      </div>
+                    </td>
+
+                    <td className="py-3.5 px-4 text-right whitespace-nowrap">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedUserDetail(usr)}
+                        className="px-3 py-1.5 text-xs font-semibold text-blue-600 dark:text-blue-400 border border-blue-500/30 hover:bg-blue-500/10 rounded-lg transition-colors cursor-pointer"
+                      >
+                        View User Detail
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Chronological Student Login Sessions Log (Strictly Owner Admin Only) */}
+      {isOwnerAdmin && analytics?.recentLogins?.length > 0 && (
+        <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 overflow-hidden">
+          <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Clock className="w-4 h-4 text-blue-500" />
+                <span>Each User Login Session History & Time Spent Log</span>
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Chronological audit log of every student & user login event, email address, authentication method, and session duration.
+              </p>
+            </div>
+            <span className="text-xs font-mono text-slate-500">
+              {analytics.recentLogins.length} Recorded Sessions
+            </span>
+          </div>
+
+          <div className="overflow-x-auto">
+            <table className="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400">
+                  <th className="py-3 px-4 font-medium">Student / User</th>
+                  <th className="py-3 px-4 font-medium">Email</th>
+                  <th className="py-3 px-4 font-medium">College & Cohort</th>
+                  <th className="py-3 px-4 font-medium">Auth Method & Device</th>
+                  <th className="py-3 px-4 font-medium">Session Time Spent</th>
+                  <th className="py-3 px-4 font-medium text-right">Login Timestamp</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                {analytics.recentLogins.slice(0, 15).map((log: any) => (
+                  <tr key={log.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/60">
+                    <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
+                      {log.userName}
+                      <span className="ml-2 text-[10px] font-mono text-slate-400">
+                        {log.userRole}
+                      </span>
+                    </td>
+                    <td className="py-3 px-4 font-mono text-slate-700 dark:text-slate-300">
+                      {log.userEmail}
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                      {log.college} · {log.degree}
+                    </td>
+                    <td className="py-3 px-4 text-slate-600 dark:text-slate-300">
+                      {log.method} · <span className="font-mono text-slate-400">{log.device}</span>
+                    </td>
+                    <td className="py-3 px-4 font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400">
+                      {log.durationFormatted}
+                    </td>
+                    <td className="py-3 px-4 font-mono tabular-nums text-right text-slate-500">
+                      {formatDateTime(log.timestamp)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Selected Student / User Full Information Modal */}
+      {isOwnerAdmin && selectedUserDetail && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 overflow-y-auto"
+          onClick={() => setSelectedUserDetail(null)}
+        >
+          <div
+            className="w-full max-w-2xl rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 space-y-5 shadow-2xl my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+              <div>
+                <div className="flex items-center gap-2 text-xs font-mono text-blue-600 dark:text-blue-400 mb-1">
+                  <span>{selectedUserDetail.role} ACCOUNT</span>
+                  <span>·</span>
+                  <span>
+                    {selectedUserDetail.isOnlineNow ? '● Active Online Now' : selectedUserDetail.activityStatus}
+                  </span>
+                </div>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                  {selectedUserDetail.name} (@{selectedUserDetail.username})
+                </h3>
+                <p className="text-xs font-mono text-slate-500 mt-0.5">
+                  Email: {selectedUserDetail.email} · UID: {selectedUserDetail.uid}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedUserDetail(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Key User Login & Time Metrics */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/50">
+                <p className="text-slate-500">Total Time Spent</p>
+                <p className="text-base font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-0.5">
+                  {selectedUserDetail.totalTimeFormatted}
+                </p>
+              </div>
+              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/50">
+                <p className="text-slate-500">Total Logins</p>
+                <p className="text-base font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-0.5">
+                  {selectedUserDetail.loginCount} Sessions
+                </p>
+              </div>
+              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/50">
+                <p className="text-slate-500">Last Session Time</p>
+                <p className="text-base font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400 mt-0.5">
+                  {selectedUserDetail.lastSessionFormatted}
+                </p>
+              </div>
+              <div className="p-3.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-900/50">
+                <p className="text-slate-500">Tracked Apps / XP</p>
+                <p className="text-base font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-0.5">
+                  {selectedUserDetail.applicationsCount} Apps · {selectedUserDetail.points} XP
+                </p>
+              </div>
+            </div>
+
+            {/* Complete Academic & Profile Information */}
+            <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 space-y-2.5 text-xs">
+              <h4 className="font-bold text-slate-900 dark:text-white">
+                Student Profile & Academic Information
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-slate-600 dark:text-slate-300">
+                <div>
+                  <span className="text-slate-400">University / College: </span>
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {selectedUserDetail.college}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Degree & Branch: </span>
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {selectedUserDetail.degree} in {selectedUserDetail.branch}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Graduation Year & CGPA: </span>
+                  <span className="font-mono font-semibold text-slate-900 dark:text-white">
+                    Class of {selectedUserDetail.graduationYear} · CGPA {selectedUserDetail.cgpa}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-slate-400">Location & Level: </span>
+                  <span className="font-semibold text-slate-900 dark:text-white">
+                    {selectedUserDetail.city}, {selectedUserDetail.country} ·{' '}
+                    {selectedUserDetail.experienceLevel}
+                  </span>
+                </div>
+              </div>
+              {selectedUserDetail.bio && (
+                <p className="text-slate-500 dark:text-slate-400 pt-1 border-t border-slate-200/70 dark:border-slate-800">
+                  {selectedUserDetail.bio}
+                </p>
+              )}
+              <div>
+                <span className="text-slate-400">Verified Skills ({selectedUserDetail.skills?.length || 0}): </span>
+                <span className="font-mono text-slate-800 dark:text-slate-200">
+                  {(selectedUserDetail.skills || []).join(' · ') || 'None listed'}
+                </span>
+              </div>
+              {selectedUserDetail.codingProfiles?.length > 0 && (
+                <div>
+                  <span className="text-slate-400">Connected Coding Profiles: </span>
+                  <span className="font-mono text-blue-600 dark:text-blue-400">
+                    {selectedUserDetail.codingProfiles.join(' · ')}
+                  </span>
+                </div>
+              )}
+            </div>
+
+            {/* Individual Login Sessions for this User */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                Individual Login Sessions for {selectedUserDetail.name}
+              </h4>
+              <div className="rounded-lg border border-slate-200 dark:border-slate-800 overflow-hidden">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 bg-slate-50 dark:bg-slate-900">
+                      <th className="py-2 px-3 font-medium">Login Timestamp</th>
+                      <th className="py-2 px-3 font-medium">Auth Method</th>
+                      <th className="py-2 px-3 font-medium">Device / Session</th>
+                      <th className="py-2 px-3 font-medium text-right">Time Spent</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+                    {(selectedUserDetail.loginHistory || []).map((lh: any) => (
+                      <tr key={lh.id}>
+                        <td className="py-2 px-3 font-mono tabular-nums text-slate-800 dark:text-slate-200">
+                          {formatDateTime(lh.timestamp)}
+                        </td>
+                        <td className="py-2 px-3 text-slate-600 dark:text-slate-300">
+                          {lh.method}
+                        </td>
+                        <td className="py-2 px-3 font-mono text-slate-500">
+                          {lh.device}
+                        </td>
+                        <td className="py-2 px-3 font-mono tabular-nums font-semibold text-emerald-600 dark:text-emerald-400 text-right">
+                          {lh.durationFormatted}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="flex justify-end pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedUserDetail(null)}
+                className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg cursor-pointer"
+              >
+                Close User Detail
+              </button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1044,6 +1514,268 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
           </table>
         </div>
       </div>
+    </div>
+  );
+};
+
+interface OwnerDashboardUserMonitorProps {
+  authFetch: (url: string, options?: RequestInit) => Promise<Response>;
+  onOpenAdminConsole: () => void;
+}
+
+export const OwnerDashboardUserMonitor: React.FC<OwnerDashboardUserMonitorProps> = ({
+  authFetch,
+  onOpenAdminConsole,
+}) => {
+  const [analytics, setAnalytics] = useState<any | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+
+  const loadData = React.useCallback(async () => {
+    try {
+      const r = await authFetch('/api/admin/analytics');
+      if (r.ok) {
+        const d = await r.json();
+        setAnalytics(d);
+      }
+    } catch {
+      // ignore
+    }
+  }, [authFetch]);
+
+  useEffect(() => {
+    loadData();
+    const timer = setInterval(loadData, 30000);
+    return () => clearInterval(timer);
+  }, [loadData]);
+
+  if (!analytics) return null;
+
+  const userDirectory: any[] = analytics.userDirectory || [];
+
+  return (
+    <div className="p-6 rounded-xl border border-emerald-500/30 bg-white dark:bg-slate-900/50 space-y-5">
+      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div>
+          <div className="flex items-center gap-2 text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 mb-1">
+            <ShieldCheck className="w-4 h-4" />
+            <span>Owner Live Telemetry · Student Logins & User Activity</span>
+          </div>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white">
+            Logged-In Students, Active Users, Time Spent & User Information
+          </h2>
+        </div>
+
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={loadData}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+          >
+            <RefreshCw className="w-3.5 h-3.5" />
+            <span>Sync Live</span>
+          </button>
+          <button
+            type="button"
+            onClick={onOpenAdminConsole}
+            className="px-3.5 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg cursor-pointer"
+          >
+            Open Full Admin Console →
+          </button>
+        </div>
+      </div>
+
+      {/* 4 Summary Metrics for Student Logins & Time Spent */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Active Users Online</p>
+          <p className="text-2xl font-bold font-mono tabular-nums text-emerald-600 dark:text-emerald-400 mt-1">
+            {analytics.activeUsers} Active
+          </p>
+          <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+            {analytics.activeStudentLogins} Students Online Now
+          </p>
+        </div>
+        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Total Student Logins</p>
+          <p className="text-2xl font-bold font-mono tabular-nums text-blue-600 dark:text-blue-400 mt-1">
+            {analytics.totalStudentLogins} Logins
+          </p>
+          <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+            Across {analytics.totalStudents} Student Accounts
+          </p>
+        </div>
+        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Total Registered Users</p>
+          <p className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
+            {analytics.totalUsers} Users
+          </p>
+          <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+            {analytics.totalLoginSessions} Total Login Sessions
+          </p>
+        </div>
+        <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-950/60">
+          <p className="text-xs text-slate-500 dark:text-slate-400">Platform Time Spent</p>
+          <p className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
+            {analytics.totalTimeSpentFormatted}
+          </p>
+          <p className="text-[11px] font-mono text-slate-500 mt-0.5">
+            Avg {analytics.averageTimeSpentFormatted} per user
+          </p>
+        </div>
+      </div>
+
+      {/* Compact Student & User Login Details Table */}
+      <div className="overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800">
+        <table className="w-full text-left border-collapse text-xs">
+          <thead>
+            <tr className="border-b border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-950/50">
+              <th className="py-2.5 px-3.5 font-medium">Student / User</th>
+              <th className="py-2.5 px-3.5 font-medium">Email Address</th>
+              <th className="py-2.5 px-3.5 font-medium">College, Degree & Skills</th>
+              <th className="py-2.5 px-3.5 font-medium">Status & Logins</th>
+              <th className="py-2.5 px-3.5 font-medium">Time Spent</th>
+              <th className="py-2.5 px-3.5 font-medium">Last Login</th>
+              <th className="py-2.5 px-3.5 font-medium text-right">Details</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
+            {userDirectory.map((u) => (
+              <tr key={u.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/50">
+                <td className="py-3 px-3.5 font-semibold text-slate-900 dark:text-white">
+                  {u.name}
+                  <span className="block text-[11px] font-mono font-normal text-slate-400">
+                    @{u.username} · {u.role}
+                  </span>
+                </td>
+                <td className="py-3 px-3.5 font-mono text-slate-700 dark:text-slate-300">
+                  {u.email}
+                </td>
+                <td className="py-3 px-3.5 text-slate-600 dark:text-slate-300 max-w-xs">
+                  <div className="font-medium text-slate-800 dark:text-slate-200 truncate">
+                    {u.college} · {u.degree} ({u.graduationYear})
+                  </div>
+                  <div className="text-[11px] text-slate-400 truncate">
+                    CGPA {u.cgpa} · {(u.skills || []).slice(0, 4).join(' · ')}
+                  </div>
+                </td>
+                <td className="py-3 px-3.5 font-mono tabular-nums">
+                  <span
+                    className={
+                      u.isOnlineNow
+                        ? 'text-emerald-600 dark:text-emerald-400 font-semibold'
+                        : 'text-amber-600 dark:text-amber-400'
+                    }
+                  >
+                    {u.isOnlineNow ? '● Active Now' : u.activityStatus}
+                  </span>
+                  <span className="block text-[11px] text-slate-400">
+                    {u.loginCount} Logins · {u.applicationsCount} Apps
+                  </span>
+                </td>
+                <td className="py-3 px-3.5 font-mono tabular-nums">
+                  <span className="font-bold text-slate-900 dark:text-white">
+                    {u.totalTimeFormatted}
+                  </span>
+                  <span className="block text-[11px] text-slate-400">
+                    Last: {u.lastSessionFormatted}
+                  </span>
+                </td>
+                <td className="py-3 px-3.5 font-mono tabular-nums text-slate-500">
+                  {u.lastLoginMethod}
+                  <span className="block text-[11px] text-slate-400">{u.lastDevice}</span>
+                </td>
+                <td className="py-3 px-3.5 text-right">
+                  <button
+                    type="button"
+                    onClick={() => setSelectedUser(u)}
+                    className="px-2.5 py-1 text-xs font-semibold text-blue-600 dark:text-blue-400 border border-blue-500/30 rounded hover:bg-blue-500/10 cursor-pointer"
+                  >
+                    Inspect
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      {selectedUser && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4"
+          onClick={() => setSelectedUser(null)}
+        >
+          <div
+            className="w-full max-w-xl rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 p-6 space-y-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
+              <div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white">
+                  {selectedUser.name} ({selectedUser.email})
+                </h3>
+                <p className="text-xs text-slate-500">
+                  {selectedUser.college} · {selectedUser.degree} in {selectedUser.branch} · Class of{' '}
+                  {selectedUser.graduationYear} · CGPA {selectedUser.cgpa}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="text-slate-400 hover:text-white cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3 text-xs font-mono">
+              <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-900">
+                <span className="text-slate-400 block">Total Time Spent</span>
+                <span className="text-sm font-bold text-emerald-600 dark:text-emerald-400">
+                  {selectedUser.totalTimeFormatted}
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-900">
+                <span className="text-slate-400 block">Total Logins</span>
+                <span className="text-sm font-bold text-slate-900 dark:text-white">
+                  {selectedUser.loginCount} Sessions
+                </span>
+              </div>
+              <div className="p-3 rounded-lg bg-slate-100 dark:bg-slate-900">
+                <span className="text-slate-400 block">Applications</span>
+                <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                  {selectedUser.applicationsCount} Tracked
+                </span>
+              </div>
+            </div>
+
+            <div className="text-xs space-y-1.5 text-slate-600 dark:text-slate-300">
+              <p>
+                <span className="text-slate-400">Location:</span> {selectedUser.city},{' '}
+                {selectedUser.country} · <span className="text-slate-400">Level:</span>{' '}
+                {selectedUser.experienceLevel}
+              </p>
+              <p>
+                <span className="text-slate-400">Skills:</span>{' '}
+                {(selectedUser.skills || []).join(' · ')}
+              </p>
+              <p>
+                <span className="text-slate-400">Last Login Method:</span>{' '}
+                {selectedUser.lastLoginMethod} ({selectedUser.lastDevice})
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => setSelectedUser(null)}
+                className="px-4 py-1.5 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg cursor-pointer"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

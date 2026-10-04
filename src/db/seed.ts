@@ -1352,7 +1352,7 @@ export async function ensureUserInitialized(
     allMatchingUsers.find((u) => u.uid === uid) ||
     allMatchingUsers.find((u) => u.email.toLowerCase() === cleanEmail);
 
-  if (userRecord && isOwnerEmail && userRecord.role !== 'ADMIN') {
+  if (userRecord && isOwnerEmail && !userRecord.role) {
     const promoted = await db
       .update(users)
       .set({ role: 'ADMIN', name: userRecord.name || 'Kartik Choudhary', updatedAt: new Date() })

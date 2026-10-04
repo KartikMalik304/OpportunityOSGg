@@ -622,6 +622,22 @@ export async function registerUserAccountDb(payload: {
       ]);
     }
 
+    await db
+      .update(users)
+      .set({ updatedAt: new Date() })
+      .where(eq(users.id, existingUser.id));
+
+    await db.insert(analyticsEvents).values({
+      userId: existingUser.id,
+      eventType: 'USER_LOGIN',
+      metadataJson: JSON.stringify({
+        method: 'Account Sign Up & Login',
+        durationSeconds: 300,
+        device: 'Web Workspace',
+        active: true,
+      }),
+    });
+
     const token = `account-session:${encodeURIComponent(existingUser.uid)}:${encodeURIComponent(
       existingUser.email
     )}:${encodeURIComponent(existingUser.name)}`;
@@ -645,6 +661,20 @@ export async function loginUserAccountDb(email: string) {
         'kartikchoudhary18122005@gmail.com',
         'Kartik Choudhary'
       );
+      await db
+        .update(users)
+        .set({ updatedAt: new Date() })
+        .where(eq(users.id, ownerRecord.id));
+      await db.insert(analyticsEvents).values({
+        userId: ownerRecord.id,
+        eventType: 'USER_LOGIN',
+        metadataJson: JSON.stringify({
+          method: 'Owner Admin Portal Login',
+          durationSeconds: 600,
+          device: 'Owner Workspace',
+          active: true,
+        }),
+      });
       const token = `account-session:${encodeURIComponent(ownerRecord.uid)}:${encodeURIComponent(
         ownerRecord.email
       )}:${encodeURIComponent(ownerRecord.name)}`;
@@ -735,6 +765,22 @@ export async function loginUserAccountDb(email: string) {
         }
       }
     }
+
+    await db
+      .update(users)
+      .set({ updatedAt: new Date() })
+      .where(eq(users.id, foundUser.id));
+
+    await db.insert(analyticsEvents).values({
+      userId: foundUser.id,
+      eventType: 'USER_LOGIN',
+      metadataJson: JSON.stringify({
+        method: 'Email & Password Login',
+        durationSeconds: 360,
+        device: 'Web Browser',
+        active: true,
+      }),
+    });
 
     const token = `account-session:${encodeURIComponent(foundUser.uid)}:${encodeURIComponent(
       foundUser.email

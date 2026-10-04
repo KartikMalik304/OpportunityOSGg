@@ -68,30 +68,6 @@ const INTEREST_OPTIONS = [
   'DevOps',
 ];
 
-const SAMPLE_ACCOUNTS = [
-  {
-    name: 'Priya Sharma',
-    email: 'priya.sharma@iitd.ac.in',
-    badge: 'M.Tech AI ’26 · CGPA 9.4',
-    focus: 'PyTorch, Deep Learning, NLP, Research & Fellowships',
-    matches: 'Top Matches: OpenAI Applied AI Intern, Anthropic Safety Intern, NVIDIA Deep Learning',
-  },
-  {
-    name: 'Arjun Mehta',
-    email: 'arjun.mehta@bits-pilani.ac.in',
-    badge: 'B.E. Systems ’28 · Sophomore',
-    focus: 'C++, Rust, Linux, Competitive Programming & Beginner Programs',
-    matches: 'Top Matches: Google STEP Internship, Codeforces Global Round, LFX Mentorship',
-  },
-  {
-    name: 'Elena Rostova',
-    email: 'elena.r@eth.ch',
-    badge: 'M.Sc Cloud & Systems ’26 · CGPA 9.2',
-    focus: 'Go, Kubernetes, Docker, Distributed Systems & Open Source',
-    matches: 'Top Matches: Linux Foundation LFX, CNCF Mentorship, Stripe Systems Intern',
-  },
-];
-
 export const AuthModal: React.FC<AuthModalProps> = ({
   initialMode = 'signup',
   onClose,
@@ -155,20 +131,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       onClose();
     } catch (err: any) {
       setError(err.message || 'Unable to sign in. Please verify your email or create a new account.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleQuickAccountSelect = async (acctEmail: string) => {
-    setError(null);
-    setLoginEmail(acctEmail);
-    setLoading(true);
-    try {
-      await onLoginEmail(acctEmail);
-      onClose();
-    } catch (err: any) {
-      setError(err.message || 'Unable to switch account.');
     } finally {
       setLoading(false);
     }
@@ -273,132 +235,87 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           {mode === 'login' ? (
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-              {/* Left 6 Cols: Email & Google Sign In */}
-              <div className="lg:col-span-6 space-y-4">
-                <form onSubmit={handleLoginSubmit} className="space-y-3.5">
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">
-                      Account Email Address
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={loginEmail}
-                      onChange={(e) => setLoginEmail(e.target.value)}
-                      placeholder="you@university.edu"
-                      className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs font-medium text-slate-500 mb-1">
-                      Password
-                    </label>
-                    <input
-                      type="password"
-                      value={loginPassword}
-                      onChange={(e) => setLoginPassword(e.target.value)}
-                      placeholder="Enter your password"
-                      className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={loading}
-                    className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
-                  >
-                    <span>{loading ? 'Signing In & Matching Opportunities...' : 'Sign In to Account'}</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
-                </form>
-
-                <div className="relative flex py-1 items-center">
-                  <div className="grow border-t border-slate-200 dark:border-slate-800" />
-                  <span className="shrink mx-3 text-[11px] text-slate-400">OR</span>
-                  <div className="grow border-t border-slate-200 dark:border-slate-800" />
+            <div className="max-w-md mx-auto space-y-4">
+              <form onSubmit={handleLoginSubmit} className="space-y-3.5">
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">
+                    Account Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={loginEmail}
+                    onChange={(e) => setLoginEmail(e.target.value)}
+                    placeholder="you@university.edu"
+                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white"
+                  />
                 </div>
-
+                <div>
+                  <label className="block text-xs font-medium text-slate-500 mb-1">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    value={loginPassword}
+                    onChange={(e) => setLoginPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-transparent text-slate-900 dark:text-white"
+                  />
+                </div>
                 <button
-                  type="button"
-                  onClick={async () => {
-                    await onGoogleLogin();
-                    onClose();
-                  }}
-                  className="w-full py-2.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  type="submit"
+                  disabled={loading}
+                  className="w-full py-2.5 px-4 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  <span>Continue with Google OAuth</span>
+                  <span>{loading ? 'Signing In & Matching Opportunities...' : 'Sign In to Account'}</span>
+                  <ArrowRight className="w-3.5 h-3.5" />
                 </button>
+              </form>
 
-                <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
-                  <p className="font-semibold text-slate-800 dark:text-slate-200">
-                    New to OpportunityOS?
-                  </p>
-                  <p className="text-slate-500 dark:text-slate-400">
-                    Create a personalized student account to unlock real-time eligibility checks and match scores tailored to your skills and graduation year.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={() => setMode('signup')}
-                    className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
-                  >
-                    Create a New Account →
-                  </button>
-                </div>
+              <div className="relative flex py-1 items-center">
+                <div className="grow border-t border-slate-200 dark:border-slate-800" />
+                <span className="shrink mx-3 text-[11px] text-slate-400">OR</span>
+                <div className="grow border-t border-slate-200 dark:border-slate-800" />
               </div>
 
-              {/* Right 6 Cols: Pre-Configured Student Accounts to See Personalized Opportunities */}
-              <div className="lg:col-span-6 space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                    1-Click Student Accounts (Different Profiles)
-                  </h3>
-                  <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400">
-                    Live PostgreSQL
-                  </span>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Select an account below to log in and see how OpportunityOS dynamically re-ranks opportunities and eligibility based on each student’s skills, degree, and cohort:
+              <button
+                type="button"
+                onClick={async () => {
+                  await onGoogleLogin();
+                  onClose();
+                }}
+                className="w-full py-2.5 px-4 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-900 rounded-lg transition-colors flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <span>Continue with Google OAuth</span>
+              </button>
+
+              <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-900/60 border border-slate-200 dark:border-slate-800 text-xs space-y-2">
+                <p className="font-semibold text-slate-800 dark:text-slate-200">
+                  New to OpportunityOS?
                 </p>
+                <p className="text-slate-500 dark:text-slate-400">
+                  Create a personalized student account to unlock real-time eligibility checks and match scores tailored to your skills and graduation year.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setMode('signup')}
+                  className="text-blue-600 dark:text-blue-400 font-semibold hover:underline cursor-pointer"
+                >
+                  Create a New Account →
+                </button>
+              </div>
 
-                <div className="space-y-2.5">
-                  {SAMPLE_ACCOUNTS.map((acct) => (
-                    <button
-                      key={acct.email}
-                      type="button"
-                      onClick={() => handleQuickAccountSelect(acct.email)}
-                      className="w-full text-left p-3 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 transition-colors bg-slate-50/50 dark:bg-slate-900/40 cursor-pointer space-y-1"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <span className="text-xs font-bold text-slate-900 dark:text-white">
-                          {acct.name}
-                        </span>
-                        <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400">
-                          {acct.badge}
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-slate-600 dark:text-slate-300">
-                        {acct.focus}
-                      </p>
-                      <p className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400">
-                        {acct.matches}
-                      </p>
-                    </button>
-                  ))}
-                </div>
-
-                {/* Role Portals */}
-                <div className="pt-2 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      onQuickRoleLogin('ORGANIZATION');
-                      onClose();
-                    }}
-                    className="w-full px-3 py-2 text-[11px] font-semibold rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer text-center"
-                  >
-                    Sign In as Recruiter / Organization Portal
-                  </button>
-                </div>
+              <div className="pt-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onQuickRoleLogin('ORGANIZATION');
+                    onClose();
+                  }}
+                  className="w-full px-3 py-2 text-[11px] font-semibold rounded-lg border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer text-center"
+                >
+                  Sign In as Recruiter / Organization Portal
+                </button>
               </div>
             </div>
           ) : (
