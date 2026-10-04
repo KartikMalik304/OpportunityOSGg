@@ -43,7 +43,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   const [step, setStep] = useState(1);
   const [saving, setSaving] = useState(false);
 
-  const [name, setName] = useState(bundle.user.name || 'Alex Verma');
+  const [name, setName] = useState(bundle.user.name || '');
   const [country, setCountry] = useState(bundle.profile.country || 'India');
   const [stateName, setStateName] = useState(bundle.profile.state || 'Maharashtra');
   const [city, setCity] = useState(bundle.profile.city || 'Mumbai');

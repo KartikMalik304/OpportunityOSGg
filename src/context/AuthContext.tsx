@@ -9,6 +9,8 @@ interface AuthContextValue {
   loading: boolean;
   authError: string | null;
   signInWithGoogle: () => Promise<void>;
+  loginWithEmail: (email: string, password?: string) => Promise<void>;
+  signupWithProfile: (payload: Record<string, any>) => Promise<void>;
   enterWorkspaceAs: (persona?: 'STUDENT' | 'ADMIN' | 'ORGANIZATION') => void;
   logout: () => Promise<void>;
   authFetch: (url: string, options?: RequestInit) => Promise<Response>;
@@ -19,7 +21,7 @@ const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [firebaseUser, setFirebaseUser] = useState<User | null>(null);
   // Token kept strictly in memory per Cloud SQL & Firebase Auth guidelines
-  const [token, setToken] = useState<string | null>('demo-session:demo-student-uid:alex.verma@iitb.ac.in:Alex%20Verma');
+  const [token, setToken] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(true);
   const [authError, setAuthError] = useState<string | null>(null);
@@ -51,20 +53,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setIsAuthenticated(true);
     } catch (error: any) {
       console.warn('Google popup sign-in notice:', error?.code || error?.message);
-      // Fallback to verified student workspace session if popup is blocked by sandboxed iframe
-      setToken('demo-session:demo-student-uid:alex.verma@iitb.ac.in:Alex%20Verma');
-      setIsAuthenticated(true);
+      setAuthError('Google popup was blocked in this preview window. Please sign in with your email address or create a new account.');
     }
+  };
+
+  const loginWithEmail = async (email: string, password?: string) => {
+    setAuthError(null);
+    const res = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to sign in with email.');
+    }
+    setFirebaseUser(null);
+    setToken(data.token);
+    setIsAuthenticated(true);
+  };
+
+  const signupWithProfile = async (payload: Record<string, any>) => {
+    setAuthError(null);
+    const res = await fetch('/api/auth/signup', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data.error || 'Failed to create account.');
+    }
+    setFirebaseUser(null);
+    setToken(data.token);
+    setIsAuthenticated(true);
   };
 
   const enterWorkspaceAs = (persona: 'STUDENT' | 'ADMIN' | 'ORGANIZATION' = 'STUDENT') => {
     setAuthError(null);
-    if (persona === 'ADMIN') {
-      setToken('demo-session:demo-admin-uid:admin@opportunityos.dev:Platform%20Admin');
-    } else if (persona === 'ORGANIZATION') {
+    if (persona === 'ORGANIZATION') {
       setToken('demo-session:demo-org-uid:recruiting@stripe.com:Stripe%20University%20Recruiting');
     } else {
-      setToken('demo-session:demo-student-uid:alex.verma@iitb.ac.in:Alex%20Verma');
+      setToken('demo-session:peer-priya-sharma:priya.sharma@iitd.ac.in:Priya%20Sharma');
     }
     setIsAuthenticated(true);
   };
@@ -78,6 +108,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       console.error('Sign out error:', err);
     }
     setFirebaseUser(null);
+    setToken(null);
     setIsAuthenticated(false);
   };
 
@@ -115,6 +146,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loading,
         authError,
         signInWithGoogle,
+        loginWithEmail,
+        signupWithProfile,
         enterWorkspaceAs,
         logout,
         authFetch,

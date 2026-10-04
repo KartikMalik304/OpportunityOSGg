@@ -626,6 +626,10 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
   authFetch,
   onRefreshDashboard,
 }) => {
+  const isOwnerAdmin =
+    bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com' &&
+    bundle.user.role === 'ADMIN';
+
   const [analytics, setAnalytics] = useState<any | null>(null);
   const [ingestMessage, setIngestMessage] = useState<string | null>(null);
   const [formError, setFormError] = useState<string | null>(null);
@@ -646,11 +650,14 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
   const [description, setDescription] = useState('');
 
   useEffect(() => {
+    if (!isOwnerAdmin) return;
     authFetch('/api/admin/analytics')
-      .then((r) => r.json())
-      .then((d) => setAnalytics(d))
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d) setAnalytics(d);
+      })
       .catch(() => {});
-  }, [authFetch, bundle.opportunities.length]);
+  }, [authFetch, bundle.opportunities.length, isOwnerAdmin]);
 
   const handleCreateOpp = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -687,6 +694,7 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
   };
 
   const handleStatusChange = async (oppId: number, status: string, featured?: boolean) => {
+    if (!isOwnerAdmin) return;
     await authFetch(`/api/opportunities/${oppId}`, {
       method: 'PUT',
       body: JSON.stringify({ status, featured }),
@@ -695,6 +703,7 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
   };
 
   const handleDeleteOpp = async (oppId: number) => {
+    if (!isOwnerAdmin) return;
     await authFetch(`/api/opportunities/${oppId}`, {
       method: 'DELETE',
     });
@@ -702,6 +711,7 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
   };
 
   const handleTriggerIngest = async () => {
+    if (!isOwnerAdmin) return;
     const res = await authFetch('/api/admin/ingest-feed', {
       method: 'POST',
       body: JSON.stringify({ feedSource: 'Approved University & CNCF Partner Feed' }),
@@ -717,69 +727,83 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
 
   return (
     <div className="space-y-8">
-      {/* Top Admin Metrics */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
-        {[
-          { label: 'Total Users', value: analytics?.totalUsers ?? 6 },
-          { label: 'Active Users', value: analytics?.activeUsers ?? 5 },
-          { label: 'Opportunities', value: bundle.opportunities.length },
-          { label: 'Applications', value: analytics?.totalApplications ?? bundle.applications.length },
-          { label: 'Saved Items', value: analytics?.totalSaves ?? bundle.savedOpportunityIds.length },
-          { label: 'Apply CTR', value: `${analytics?.ctrPercent ?? 34.8}%` },
-        ].map((stat) => (
-          <div
-            key={stat.label}
-            className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40"
-          >
-            <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
-            <p className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
-              {stat.value}
-            </p>
-          </div>
-        ))}
-      </div>
-
-      {/* Analytics Chart + Ingestion Engine */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        <div className="lg:col-span-7 p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
-          <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
-            <BarChart3 className="w-4 h-4 text-blue-500" />
-            <span>Opportunities Distribution by Category</span>
-          </h3>
-          <div className="h-64 w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={analytics?.categoryBreakdown || []}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
-                <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
-                <Tooltip
-                  contentStyle={{
-                    backgroundColor: '#0f172a',
-                    borderColor: '#1e293b',
-                    color: '#f8fafc',
-                    fontSize: '12px',
-                  }}
-                />
-                <Bar dataKey="value" fill="#2563eb" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </div>
+      {/* Top Admin Metrics (Strictly Owner Admin Only) */}
+      {isOwnerAdmin && (
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
+          {[
+            { label: 'Total Users', value: analytics?.totalUsers ?? 5 },
+            { label: 'Active Users', value: analytics?.activeUsers ?? 4 },
+            { label: 'Opportunities', value: bundle.opportunities.length },
+            { label: 'Applications', value: analytics?.totalApplications ?? bundle.applications.length },
+            { label: 'Saved Items', value: analytics?.totalSaves ?? bundle.savedOpportunityIds.length },
+            { label: 'Apply CTR', value: `${analytics?.ctrPercent ?? 34.8}%` },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40"
+            >
+              <p className="text-xs text-slate-500 dark:text-slate-400">{stat.label}</p>
+              <p className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
+                {stat.value}
+              </p>
+            </div>
+          ))}
         </div>
+      )}
+
+      {/* Analytics Chart (Admin Only) + Post Opportunity Form */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {isOwnerAdmin && (
+          <div className="lg:col-span-7 p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white mb-4 flex items-center gap-2">
+              <BarChart3 className="w-4 h-4 text-blue-500" />
+              <span>Opportunities Distribution by Category</span>
+            </h3>
+            <div className="h-64 w-full">
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={analytics?.categoryBreakdown || []}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="rgba(148,163,184,0.15)" />
+                  <XAxis dataKey="name" tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                  <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: '#0f172a',
+                      borderColor: '#1e293b',
+                      color: '#f8fafc',
+                      fontSize: '12px',
+                    }}
+                  />
+                  <Bar dataKey="value" fill="#2563eb" radius={[4, 4, 0, 0]} />
+                </BarChart>
+              </ResponsiveContainer>
+            </div>
+          </div>
+        )}
 
         {/* Post Opportunity Form (Organization & Admin) */}
-        <div className="lg:col-span-5 p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40">
+        <div
+          className={`${
+            isOwnerAdmin ? 'lg:col-span-5' : 'lg:col-span-12'
+          } p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40`}
+        >
           <div className="flex items-center justify-between mb-3">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Building2 className="w-4 h-4 text-blue-500" />
-              <span>Post & Verify Opportunity</span>
+              <span>
+                {isOwnerAdmin
+                  ? 'Post & Verify Opportunity'
+                  : 'Organization Portal — Submit Opportunity'}
+              </span>
             </h3>
-            <button
-              type="button"
-              onClick={handleTriggerIngest}
-              className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-            >
-              + Run Partner Feed Sync
-            </button>
+            {isOwnerAdmin && (
+              <button
+                type="button"
+                onClick={handleTriggerIngest}
+                className="text-[11px] font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+              >
+                + Run Partner Feed Sync
+              </button>
+            )}
           </div>
 
           {ingestMessage && (
@@ -878,15 +902,19 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
         </div>
       </div>
 
-      {/* Admin Verification & Moderation Table */}
+      {/* Opportunity Listings / Admin Moderation Table */}
       <div className="rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 overflow-hidden">
         <div className="px-6 py-4 border-b border-slate-200 dark:border-slate-800 flex flex-wrap items-center justify-between gap-2">
           <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-              Opportunity Moderation & Workflow Queue
+              {isOwnerAdmin
+                ? 'Opportunity Moderation & Workflow Queue'
+                : 'Submitted & Active Organization Opportunities'}
             </h3>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Workflow: Draft → Pending Review → Approved → Published → Expired
+              {isOwnerAdmin
+                ? 'Workflow: Draft → Pending Review → Approved → Published → Expired'
+                : 'Listings submitted by partner organizations'}
             </p>
           </div>
         </div>
@@ -900,7 +928,9 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
                 <th className="py-3 px-4 font-medium">Category</th>
                 <th className="py-3 px-4 font-medium">Deadline</th>
                 <th className="py-3 px-4 font-medium">Status</th>
-                <th className="py-3 px-4 font-medium text-right">Actions</th>
+                {isOwnerAdmin && (
+                  <th className="py-3 px-4 font-medium text-right">Actions</th>
+                )}
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-200 dark:divide-slate-800">
@@ -908,7 +938,7 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
                 <tr key={opp.id} className="hover:bg-slate-50 dark:hover:bg-slate-900/60">
                   <td className="py-3 px-4 font-semibold text-slate-900 dark:text-white">
                     {opp.title}
-                    {opp.isSeed && (
+                    {isOwnerAdmin && opp.isSeed && (
                       <span className="ml-2 text-[10px] font-mono text-slate-400">
                         [Seed]
                       </span>
@@ -936,34 +966,36 @@ export const AdminAndOrgView: React.FC<AdminAndOrgViewProps> = ({
                       {opp.status}
                     </span>
                   </td>
-                  <td className="py-3 px-4 text-right whitespace-nowrap space-x-2">
-                    <button
-                      onClick={() => handleStatusChange(opp.id, 'Published', !opp.featured)}
-                      className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                    >
-                      {opp.featured ? 'Unfeature' : 'Feature'}
-                    </button>
-                    {opp.status !== 'Published' && (
+                  {isOwnerAdmin && (
+                    <td className="py-3 px-4 text-right whitespace-nowrap space-x-2">
                       <button
-                        onClick={() => handleStatusChange(opp.id, 'Published')}
-                        className="text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                        onClick={() => handleStatusChange(opp.id, 'Published', !opp.featured)}
+                        className="text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
                       >
-                        Approve
+                        {opp.featured ? 'Unfeature' : 'Feature'}
                       </button>
-                    )}
-                    <button
-                      onClick={() => handleStatusChange(opp.id, 'Expired')}
-                      className="text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
-                    >
-                      Expire
-                    </button>
-                    <button
-                      onClick={() => handleDeleteOpp(opp.id)}
-                      className="text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
-                    >
-                      Delete
-                    </button>
-                  </td>
+                      {opp.status !== 'Published' && (
+                        <button
+                          onClick={() => handleStatusChange(opp.id, 'Published')}
+                          className="text-emerald-600 dark:text-emerald-400 hover:underline cursor-pointer"
+                        >
+                          Approve
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleStatusChange(opp.id, 'Expired')}
+                        className="text-amber-600 dark:text-amber-400 hover:underline cursor-pointer"
+                      >
+                        Expire
+                      </button>
+                      <button
+                        onClick={() => handleDeleteOpp(opp.id)}
+                        className="text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>

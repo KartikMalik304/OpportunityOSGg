@@ -404,7 +404,7 @@ export const CodingAggregatorView: React.FC<CodingAggregatorProps> = ({
                 type="text"
                 value={usernameInput}
                 onChange={(e) => setUsernameInput(e.target.value)}
-                placeholder="Enter username (e.g. torvalds, tourist, alexverma)..."
+                placeholder="Enter username (e.g. torvalds, tourist)..."
                 className="flex-1 px-3.5 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
               />
               <button

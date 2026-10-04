@@ -29,6 +29,10 @@ import {
   MessageSquare,
   Send,
   TrendingUp,
+  PlusCircle,
+  Upload,
+  Zap,
+  Users,
 } from 'lucide-react';
 import {
   ResponsiveContainer,
@@ -47,6 +51,11 @@ import { DashboardBundle, EnrichedOpportunity, ApplicationItem } from './types/o
 import { LandingPage } from './components/LandingPage.tsx';
 import { OnboardingModal } from './components/OnboardingModal.tsx';
 import { OpportunityDetailsModal } from './components/OpportunityDetailsModal.tsx';
+import { AuthModal } from './components/AuthModal.tsx';
+import {
+  QuickLogApplicationModal,
+  QuickUploadResumeModal,
+} from './components/QuickActionModals.tsx';
 import {
   RoadmapsView,
   CodingAggregatorView,
@@ -653,7 +662,10 @@ function OpportunityCard({
 function WorkspaceApp() {
   const {
     isAuthenticated,
+    token,
     signInWithGoogle,
+    loginWithEmail,
+    signupWithProfile,
     enterWorkspaceAs,
     logout,
     authFetch,
@@ -666,7 +678,12 @@ function WorkspaceApp() {
   const [bundleError, setBundleError] = useState<string | null>(null);
 
   // Modals & Drawers
+  const [authModalOpen, setAuthModalOpen] = useState(false);
+  const [authModalMode, setAuthModalMode] = useState<'login' | 'signup'>('signup');
   const [showOnboarding, setShowOnboarding] = useState(false);
+  const [showQuickLogModal, setShowQuickLogModal] = useState(false);
+  const [showQuickResumeModal, setShowQuickResumeModal] = useState(false);
+  const [floatingQuickMenuOpen, setFloatingQuickMenuOpen] = useState(false);
   const [selectedOpportunity, setSelectedOpportunity] =
     useState<EnrichedOpportunity | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -731,7 +748,7 @@ function WorkspaceApp() {
     if (isAuthenticated) {
       fetchDashboard();
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, token]);
 
   // Sync category filter when user clicks a dedicated category tab in the sidebar
   const handleSelectNavTab = (tab: NavTab) => {
@@ -803,6 +820,23 @@ function WorkspaceApp() {
     await authFetch('/api/applications', {
       method: 'POST',
       body: JSON.stringify({ opportunityId: oppId, status }),
+    });
+    await fetchDashboard();
+  };
+
+  const handleLogDetailedApplication = async (payload: {
+    opportunityId: number;
+    status: string;
+    appliedAt?: string;
+    interviewDate?: string;
+    resumeUsed?: string;
+    referral?: string;
+    notes?: string;
+    nextAction?: string;
+  }) => {
+    await authFetch('/api/applications', {
+      method: 'POST',
+      body: JSON.stringify(payload),
     });
     await fetchDashboard();
   };
@@ -926,22 +960,66 @@ function WorkspaceApp() {
   // Show Landing Page when not signed into workspace
   if (!isAuthenticated) {
     return (
-      <LandingPage
-        onGetStarted={() => enterWorkspaceAs('STUDENT')}
-        onExploreAs={(role) => {
-          enterWorkspaceAs(role);
-          if (role === 'ADMIN') setActiveTab('Admin');
-          else if (role === 'ORGANIZATION') setActiveTab('Organization');
-          else setActiveTab('Dashboard');
-        }}
-        onGoogleLogin={signInWithGoogle}
-        darkMode={darkMode}
-        onToggleDarkMode={() => setDarkMode(!darkMode)}
-      />
+      <>
+        <LandingPage
+          onGetStarted={() => {
+            setAuthModalMode('signup');
+            setAuthModalOpen(true);
+          }}
+          onSignIn={() => {
+            setAuthModalMode('login');
+            setAuthModalOpen(true);
+          }}
+          onExploreAs={(role) => {
+            enterWorkspaceAs(role);
+            if (role === 'ADMIN') setActiveTab('Admin');
+            else if (role === 'ORGANIZATION') setActiveTab('Organization');
+            else setActiveTab('Dashboard');
+          }}
+          onGoogleLogin={signInWithGoogle}
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode(!darkMode)}
+        />
+        {authModalOpen && (
+          <AuthModal
+            initialMode={authModalMode}
+            onClose={() => setAuthModalOpen(false)}
+            onLoginEmail={async (email, password) => {
+              await loginWithEmail(email, password);
+              setActiveTab('Dashboard');
+            }}
+            onSignupProfile={async (payload) => {
+              await signupWithProfile(payload);
+              if (payload.role === 'ORGANIZATION') setActiveTab('Organization');
+              else setActiveTab('Dashboard');
+            }}
+            onGoogleLogin={signInWithGoogle}
+            onQuickRoleLogin={(role) => {
+              enterWorkspaceAs(role);
+              if (role === 'ADMIN') setActiveTab('Admin');
+              else if (role === 'ORGANIZATION') setActiveTab('Organization');
+              else setActiveTab('Dashboard');
+            }}
+          />
+        )}
+      </>
     );
   }
 
   const unreadNotifCount = bundle?.notifications.filter((n) => !n.read).length || 0;
+  const isOwnerAdmin = Boolean(
+    bundle?.user &&
+      bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com' &&
+      bundle.user.role === 'ADMIN'
+  );
+  const visibleSidebarItems = SIDEBAR_ITEMS.filter((item) => {
+    if (item.id === 'Admin') return isOwnerAdmin;
+    if (item.id === 'Organization') {
+      return isOwnerAdmin || bundle?.user.role === 'ORGANIZATION';
+    }
+    return true;
+  });
+
   const isFeedTab = [
     'Discover',
     'Internships',
@@ -965,12 +1043,16 @@ function WorkspaceApp() {
             OpportunityOS
           </button>
           <span className="text-[11px] font-mono text-blue-600 dark:text-blue-400">
-            {bundle?.user.role || 'STUDENT'}
+            {isOwnerAdmin
+              ? 'ADMIN'
+              : bundle?.user.role === 'ORGANIZATION'
+              ? 'ORGANIZATION'
+              : 'STUDENT'}
           </span>
         </div>
 
         <nav className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5">
-          {SIDEBAR_ITEMS.map((item) => {
+          {visibleSidebarItems.map((item) => {
             const Icon = item.icon;
             const active = activeTab === item.id;
             return (
@@ -1002,7 +1084,7 @@ function WorkspaceApp() {
           <div className="flex items-center justify-between text-xs px-2">
             <div className="truncate">
               <p className="font-semibold text-slate-900 dark:text-white truncate">
-                {bundle?.user.name || 'Alex Verma'}
+                {bundle?.user.name || 'Student Account'}
               </p>
               <p className="text-[11px] text-slate-500 font-mono truncate">
                 {bundle?.profile.degree} ’{String(bundle?.profile.graduationYear || 2027).slice(-2)} · {bundle?.readiness.overall || 84}/100
@@ -1030,7 +1112,7 @@ function WorkspaceApp() {
               </button>
             </div>
             <div className="flex-1 overflow-y-auto space-y-1">
-              {SIDEBAR_ITEMS.map((item) => {
+              {visibleSidebarItems.map((item) => {
                 const Icon = item.icon;
                 return (
                   <button
@@ -1145,14 +1227,45 @@ function WorkspaceApp() {
                   {/* Greeting & Top Metrics */}
                   <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs font-mono text-blue-600 dark:text-blue-400 mb-1">
+                        <span>Active Account: {bundle.user.email}</span>
+                        {isOwnerAdmin && (
+                          <span className="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold">
+                            OWNER · SUPER ADMIN
+                          </span>
+                        )}
+                        <span>·</span>
+                        <span>
+                          Skills Matched: {bundle.skills.slice(0, 5).map((s) => s.name).join(', ') || 'Core CS'}
+                        </span>
+                      </div>
                       <h1 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white">
                         Good morning, {bundle.user.name.split(' ')[0]}
                       </h1>
                       <p className="text-sm text-slate-500 dark:text-slate-400 mt-0.5">
-                        Here are opportunities selected and verified for your {bundle.profile.degree} ({bundle.profile.graduationYear}) profile.
+                        Showing opportunities ranked for your {bundle.profile.degree} in {bundle.profile.branch} ({bundle.profile.graduationYear}, CGPA {bundle.profile.cgpa}) account.
                       </p>
                     </div>
                     <div className="flex flex-wrap items-center gap-2">
+                      {isOwnerAdmin && (
+                        <button
+                          onClick={() => handleSelectNavTab('Admin')}
+                          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 border border-emerald-500/40 bg-emerald-500/10 rounded-lg hover:bg-emerald-500/20 cursor-pointer"
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          <span>Owner Admin Console</span>
+                        </button>
+                      )}
+                      <button
+                        onClick={() => {
+                          setAuthModalMode('login');
+                          setAuthModalOpen(true);
+                        }}
+                        className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer"
+                      >
+                        <Users className="w-3.5 h-3.5" />
+                        <span>Switch / Create Account</span>
+                      </button>
                       <button
                         onClick={() => setShowOnboarding(true)}
                         className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 cursor-pointer"
@@ -1199,6 +1312,89 @@ function WorkspaceApp() {
                       <p className="text-2xl font-bold font-mono tabular-nums text-slate-900 dark:text-white mt-1">
                         {bundle.readiness.overall}/100
                       </p>
+                    </div>
+                  </div>
+
+                  {/* Quick Actions Grid (Below Metrics Strip) */}
+                  <div className="p-5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-3.5">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <div className="flex items-center gap-2">
+                        <Zap className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">
+                          Quick Actions
+                        </h2>
+                      </div>
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
+                        Instant workflows synced to your {bundle.user.name} account
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      {/* 1. Log a New Application */}
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickLogModal(true)}
+                        className="group text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50/60 dark:bg-slate-950/60 transition-colors flex items-start justify-between gap-3 cursor-pointer"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <PlusCircle className="w-4 h-4 text-blue-600 dark:text-blue-400 shrink-0" />
+                            <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                              Log a New Application
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Record an application stage, referral, or interview date to your Kanban tracker (+35 XP).
+                          </p>
+                        </div>
+                        <span className="text-xs font-mono font-semibold text-blue-600 dark:text-blue-400 shrink-0">
+                          + Log →
+                        </span>
+                      </button>
+
+                      {/* 2. Upload Resume */}
+                      <button
+                        type="button"
+                        onClick={() => setShowQuickResumeModal(true)}
+                        className="group text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50/60 dark:bg-slate-950/60 transition-colors flex items-start justify-between gap-3 cursor-pointer"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Upload className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                            <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
+                              Upload Resume
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Extract technical skills via AI and recalculate your eligibility & match scores across all roles.
+                          </p>
+                        </div>
+                        <span className="text-xs font-mono font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                          Analyze →
+                        </span>
+                      </button>
+
+                      {/* 3. Find Hackathons */}
+                      <button
+                        type="button"
+                        onClick={() => handleSelectNavTab('Hackathons')}
+                        className="group text-left p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-blue-500 bg-slate-50/60 dark:bg-slate-950/60 transition-colors flex items-start justify-between gap-3 cursor-pointer"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <Terminal className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
+                            <span className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors">
+                              Find Hackathons
+                            </span>
+                          </div>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                            Browse {bundle.opportunities.filter((o) => o.category === 'Hackathon').length} active global & beginner-friendly hackathons matched to your stack.
+                          </p>
+                        </div>
+                        <span className="text-xs font-mono font-semibold text-amber-600 dark:text-amber-400 shrink-0">
+                          Explore →
+                        </span>
+                      </button>
                     </div>
                   </div>
 
@@ -1685,7 +1881,9 @@ function WorkspaceApp() {
               )}
 
               {/* 9. ADMIN CONSOLE & ORGANIZATION PORTAL */}
-              {(activeTab === 'Admin' || activeTab === 'Organization') && (
+              {((activeTab === 'Admin' && isOwnerAdmin) ||
+                (activeTab === 'Organization' &&
+                  (isOwnerAdmin || bundle.user.role === 'ORGANIZATION'))) && (
                 <AdminAndOrgView
                   bundle={bundle}
                   authFetch={authFetch}
@@ -1693,7 +1891,7 @@ function WorkspaceApp() {
                 />
               )}
 
-              {/* 10. SETTINGS & RBAC ROLE SWITCHER */}
+              {/* 10. SETTINGS */}
               {activeTab === 'Settings' && (
                 <div className="max-w-2xl space-y-6">
                   <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-4">
@@ -1738,29 +1936,31 @@ function WorkspaceApp() {
                     </div>
                   </div>
 
-                  <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-4">
-                    <h2 className="text-base font-bold text-slate-900 dark:text-white">
-                      Role-Based Access Control (RBAC) Switcher
-                    </h2>
-                    <p className="text-xs text-slate-500">
-                      Switch your active role in PostgreSQL to test Student, Organization/Recruiter, or Admin permissions:
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {(['STUDENT', 'ORGANIZATION', 'ADMIN'] as const).map((r) => (
-                        <button
-                          key={r}
-                          onClick={() => handleSaveProfile({ role: r })}
-                          className={`px-4 py-2 text-xs font-semibold rounded-lg border cursor-pointer ${
-                            bundle.user.role === r
-                              ? 'bg-blue-600 text-white border-blue-600'
-                              : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
-                          }`}
-                        >
-                          {r} Role
-                        </button>
-                      ))}
+                  {isOwnerAdmin && (
+                    <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-4">
+                      <h2 className="text-base font-bold text-slate-900 dark:text-white">
+                        Owner Role-Based Access Control (RBAC) Switcher
+                      </h2>
+                      <p className="text-xs text-slate-500">
+                        Exclusive to platform owner ({bundle.user.email}):
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {(['STUDENT', 'ORGANIZATION', 'ADMIN'] as const).map((r) => (
+                          <button
+                            key={r}
+                            onClick={() => handleSaveProfile({ role: r })}
+                            className={`px-4 py-2 text-xs font-semibold rounded-lg border cursor-pointer ${
+                              bundle.user.role === r
+                                ? 'bg-blue-600 text-white border-blue-600'
+                                : 'border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300'
+                            }`}
+                          >
+                            {r} Role
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               )}
             </>
@@ -1852,6 +2052,102 @@ function WorkspaceApp() {
           onSaveProfile={handleSaveProfile}
         />
       )}
+
+      {/* Quick Actions: Log a New Application Modal */}
+      {showQuickLogModal && bundle && (
+        <QuickLogApplicationModal
+          opportunities={bundle.opportunities}
+          onClose={() => setShowQuickLogModal(false)}
+          onSaveApplication={handleLogDetailedApplication}
+          onOpenKanban={() => handleSelectNavTab('Applications')}
+        />
+      )}
+
+      {/* Quick Actions: Upload Resume Modal */}
+      {showQuickResumeModal && bundle && (
+        <QuickUploadResumeModal
+          bundle={bundle}
+          onClose={() => setShowQuickResumeModal(false)}
+          onAnalyzeResume={handleAnalyzeResume}
+          onOpenProfile={() => handleSelectNavTab('Profile')}
+        />
+      )}
+
+      {/* Account Sign In / Create Account Modal (Accessible in Workspace too) */}
+      {authModalOpen && (
+        <AuthModal
+          initialMode={authModalMode}
+          onClose={() => setAuthModalOpen(false)}
+          onLoginEmail={async (email, password) => {
+            await loginWithEmail(email, password);
+            setActiveTab('Dashboard');
+          }}
+          onSignupProfile={async (payload) => {
+            await signupWithProfile(payload);
+            if (payload.role === 'ORGANIZATION') setActiveTab('Organization');
+            else setActiveTab('Dashboard');
+          }}
+          onGoogleLogin={signInWithGoogle}
+          onQuickRoleLogin={(role) => {
+            enterWorkspaceAs(role);
+            if (role === 'ADMIN') setActiveTab('Admin');
+            else if (role === 'ORGANIZATION') setActiveTab('Organization');
+            else setActiveTab('Dashboard');
+          }}
+        />
+      )}
+
+      {/* Floating Quick Actions Menu (Bottom-Right Launcher) */}
+      <div className="fixed bottom-5 right-5 z-30 flex flex-col items-end gap-2">
+        {floatingQuickMenuOpen && (
+          <div className="w-64 p-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 shadow-2xl space-y-1 text-xs">
+            <div className="px-2.5 py-1.5 text-[11px] font-mono font-semibold text-slate-400 border-b border-slate-200 dark:border-slate-800">
+              Quick Actions Menu
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setFloatingQuickMenuOpen(false);
+                setShowQuickLogModal(true);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium cursor-pointer text-left"
+            >
+              <PlusCircle className="w-4 h-4 text-blue-500 shrink-0" />
+              <span>Log a New Application</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFloatingQuickMenuOpen(false);
+                setShowQuickResumeModal(true);
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium cursor-pointer text-left"
+            >
+              <Upload className="w-4 h-4 text-emerald-500 shrink-0" />
+              <span>Upload Resume</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setFloatingQuickMenuOpen(false);
+                handleSelectNavTab('Hackathons');
+              }}
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-900 text-slate-800 dark:text-slate-200 font-medium cursor-pointer text-left"
+            >
+              <Terminal className="w-4 h-4 text-amber-500 shrink-0" />
+              <span>Find Hackathons</span>
+            </button>
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={() => setFloatingQuickMenuOpen(!floatingQuickMenuOpen)}
+          className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold shadow-lg transition-colors cursor-pointer"
+        >
+          <Zap className="w-4 h-4" />
+          <span>Quick Actions</span>
+        </button>
+      </div>
 
       {/* Opportunity Details & Eligibility Breakdown Drawer */}
       {selectedOpportunity && bundle && (

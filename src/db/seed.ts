@@ -1230,8 +1230,18 @@ export async function ensureSeeded() {
       ]);
     }
 
-    // 6. Seed Leaderboard Peers
+    // 6. Seed Owner/Admin & Leaderboard Peers
     const peerUsers = [
+      {
+        uid: 'owner-kartik-admin',
+        name: 'Kartik Choudhary',
+        email: 'kartikchoudhary18122005@gmail.com',
+        username: 'kartikchoudhary',
+        role: 'ADMIN',
+        avatar: '',
+        points: 1650,
+        streakDays: 30,
+      },
       {
         uid: 'peer-priya-sharma',
         name: 'Priya Sharma',
@@ -1310,6 +1320,8 @@ export async function ensureSeeded() {
   }
 }
 
+export const OWNER_ADMIN_EMAIL = 'kartikchoudhary18122005@gmail.com';
+
 export async function ensureUserInitialized(
   uid: string,
   email: string,
@@ -1317,31 +1329,56 @@ export async function ensureUserInitialized(
 ) {
   await ensureSeeded();
 
-  const cleanEmail = email || 'alex.verma@iitb.ac.in';
+  const cleanEmail = (email || 'priya.sharma@iitd.ac.in').trim().toLowerCase();
+  const isOwnerEmail = cleanEmail === OWNER_ADMIN_EMAIL;
   const defaultName =
     displayName ||
-    (cleanEmail.split('@')[0] || 'Alex Verma')
-      .replace(/[._-]/g, ' ')
-      .replace(/\b\w/g, (l) => l.toUpperCase());
+    (isOwnerEmail
+      ? 'Kartik Choudhary'
+      : (cleanEmail.split('@')[0] || 'Student Developer')
+          .replace(/[._-]/g, ' ')
+          .replace(/\b\w/g, (l) => l.toUpperCase()));
 
   const baseUsername =
     cleanEmail
       .split('@')[0]
       .toLowerCase()
-      .replace(/[^a-z0-9]/g, '') || 'alexverma';
+      .replace(/[^a-z0-9]/g, '') || 'student';
 
-  const existing = await db.select().from(users).where(eq(users.uid, uid));
-  let userRecord = existing[0];
+  const resumePrefix = defaultName.replace(/\s+/g, '_');
+
+  const allMatchingUsers = await db.select().from(users);
+  let userRecord =
+    allMatchingUsers.find((u) => u.uid === uid) ||
+    allMatchingUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+
+  if (userRecord && isOwnerEmail && userRecord.role !== 'ADMIN') {
+    const promoted = await db
+      .update(users)
+      .set({ role: 'ADMIN', name: userRecord.name || 'Kartik Choudhary', updatedAt: new Date() })
+      .where(eq(users.id, userRecord.id))
+      .returning();
+    userRecord = promoted[0] || userRecord;
+  } else if (userRecord && !isOwnerEmail && userRecord.role === 'ADMIN') {
+    // Non-owner accounts must never hold ADMIN role
+    const demoted = await db
+      .update(users)
+      .set({ role: 'STUDENT', updatedAt: new Date() })
+      .where(eq(users.id, userRecord.id))
+      .returning();
+    userRecord = demoted[0] || userRecord;
+  }
 
   if (!userRecord) {
     const suffix = Math.floor(100 + Math.random() * 899);
-    const uname = uid === 'demo-student-uid' ? 'alexverma' : `${baseUsername}${suffix}`;
-    const role =
-      uid === 'demo-admin-uid'
-        ? 'ADMIN'
-        : uid === 'demo-org-uid'
-        ? 'ORGANIZATION'
-        : 'STUDENT';
+    const uname = isOwnerEmail
+      ? `kartikchoudhary`
+      : `${baseUsername}${suffix}`;
+    const role = isOwnerEmail
+      ? 'ADMIN'
+      : uid === 'demo-org-uid'
+      ? 'ORGANIZATION'
+      : 'STUDENT';
 
     const inserted = await db
       .insert(users)
@@ -1351,8 +1388,8 @@ export async function ensureUserInitialized(
         email: cleanEmail,
         username: uname,
         role,
-        points: 1240,
-        streakDays: 14,
+        points: isOwnerEmail ? 1650 : 1240,
+        streakDays: isOwnerEmail ? 30 : 14,
       })
       .onConflictDoUpdate({
         target: users.uid,
@@ -1369,7 +1406,7 @@ export async function ensureUserInitialized(
         country: 'India',
         state: 'Maharashtra',
         city: 'Mumbai',
-        college: 'Indian Institute of Technology Bombay',
+        college: 'Indian Institute of Technology',
         degree: 'B.Tech',
         branch: 'Computer Science & Engineering',
         graduationYear: 2027,
@@ -1472,7 +1509,7 @@ export async function ensureUserInitialized(
       {
         userId: userRecord.id,
         platform: 'GitHub',
-        username: 'alexverma-dev',
+        username: `${baseUsername}-dev`,
         rating: 0,
         maxRating: 0,
         rankTitle: 'Open Source Contributor',
@@ -1517,7 +1554,7 @@ export async function ensureUserInitialized(
       {
         userId: userRecord.id,
         platform: 'LeetCode',
-        username: 'alexverma',
+        username: baseUsername,
         rating: 1845,
         maxRating: 1890,
         rankTitle: 'Knight (Top 6.2%)',
@@ -1534,7 +1571,7 @@ export async function ensureUserInitialized(
       {
         userId: userRecord.id,
         platform: 'Codeforces',
-        username: 'alex_cp',
+        username: `${baseUsername}_cp`,
         rating: 1542,
         maxRating: 1610,
         rankTitle: 'EXPERT',
@@ -1551,7 +1588,7 @@ export async function ensureUserInitialized(
       {
         userId: userRecord.id,
         platform: 'HackerRank',
-        username: 'alexverma',
+        username: baseUsername,
         rating: 1920,
         maxRating: 1920,
         rankTitle: '6-Star Gold',
@@ -1566,7 +1603,7 @@ export async function ensureUserInitialized(
       {
         userId: userRecord.id,
         platform: 'CodeChef',
-        username: 'alex_cc',
+        username: `${baseUsername}_cc`,
         rating: 1864,
         maxRating: 1912,
         rankTitle: '4-Star (★★★★)',
@@ -1596,9 +1633,9 @@ export async function ensureUserInitialized(
           opportunityId: allOpps[0].id,
           status: 'Applied',
           appliedAt: futureDate(-3),
-          notes: 'Submitted with referral from IITB alum on Cloud Core team. Online assessment expected next week.',
+          notes: 'Submitted with referral from university alum on Cloud Core team. Online assessment expected next week.',
           interviewDate: futureDate(9),
-          resumeUsed: 'Alex_Verma_SWE_Intern_2027.pdf',
+          resumeUsed: `${resumePrefix}_SWE_Intern_2027.pdf`,
           referral: 'Siddharth R. (Senior SWE)',
           nextAction: 'Complete 5 Google tagged Graph & DP problems',
         },
@@ -1609,7 +1646,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-2),
           notes: 'Cleared online coding round (2/2 solved in 38 mins). Technical round scheduled.',
           interviewDate: futureDate(4),
-          resumeUsed: 'Alex_Verma_SWE_Intern_2027.pdf',
+          resumeUsed: `${resumePrefix}_SWE_Intern_2027.pdf`,
           referral: 'Campus Placement Cell',
           nextAction: 'Review Azure distributed caching & system design fundamentals',
         },
@@ -1620,7 +1657,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-8),
           notes: 'Tailoring resume to highlight Go and PostgreSQL idempotency project.',
           interviewDate: '',
-          resumeUsed: 'Alex_Verma_Backend_Resume.pdf',
+          resumeUsed: `${resumePrefix}_Backend_Resume.pdf`,
           referral: '',
           nextAction: 'Submit application before deadline in 9 days',
         },
@@ -1631,7 +1668,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-13),
           notes: 'Received take-home Next.js App Router performance optimization challenge.',
           interviewDate: futureDate(6),
-          resumeUsed: 'Alex_Verma_FullStack_Resume.pdf',
+          resumeUsed: `${resumePrefix}_FullStack_Resume.pdf`,
           referral: 'Open Source PR #14820',
           nextAction: 'Submit Next.js Edge caching take-home before Friday',
         },
@@ -1642,7 +1679,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-19),
           notes: 'Completed technical & research evaluation rounds. Received fellowship offer!',
           interviewDate: futureDate(-9),
-          resumeUsed: 'Alex_Verma_AI_Research_Resume.pdf',
+          resumeUsed: `${resumePrefix}_AI_Research_Resume.pdf`,
           referral: 'Open Source Maintainer',
           nextAction: 'Review onboarding paperwork',
         },
@@ -1653,7 +1690,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-27),
           notes: 'Passed system architecture screen; final team match interview completed.',
           interviewDate: futureDate(5),
-          resumeUsed: 'Alex_Verma_FullStack_Resume.pdf',
+          resumeUsed: `${resumePrefix}_FullStack_Resume.pdf`,
           referral: '',
           nextAction: 'Follow up with university recruiter',
         },
@@ -1664,7 +1701,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-38),
           notes: 'Submitted backend systems portfolio and Go benchmarks.',
           interviewDate: '',
-          resumeUsed: 'Alex_Verma_Backend_Resume.pdf',
+          resumeUsed: `${resumePrefix}_Backend_Resume.pdf`,
           referral: 'Alumni Network',
           nextAction: 'Practice concurrency & PostgreSQL indexing questions',
         },
@@ -1675,7 +1712,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-46),
           notes: 'Completed 90-minute HackerRank C++ and PyTorch assessment.',
           interviewDate: '',
-          resumeUsed: 'Alex_Verma_AI_Research_Resume.pdf',
+          resumeUsed: `${resumePrefix}_AI_Research_Resume.pdf`,
           referral: '',
           nextAction: 'Await technical interview scheduling',
         },
@@ -1686,7 +1723,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-57),
           notes: 'Bookmarked early for summer analyst cohort preparation.',
           interviewDate: '',
-          resumeUsed: 'Alex_Verma_SWE_Intern_2027.pdf',
+          resumeUsed: `${resumePrefix}_SWE_Intern_2027.pdf`,
           referral: '',
           nextAction: 'Complete competitive programming roadmap module',
         },
@@ -1697,8 +1734,8 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-2),
           notes: 'Submitted Creative Cloud WebGL & TypeScript systems portfolio.',
           interviewDate: '',
-          resumeUsed: 'Alex_Verma_FullStack_Resume.pdf',
-          referral: 'IITB Research Lab',
+          resumeUsed: `${resumePrefix}_FullStack_Resume.pdf`,
+          referral: 'Research Lab',
           nextAction: 'Prepare frontend systems architecture examples',
         },
         {
@@ -1708,7 +1745,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(-1),
           notes: 'Reviewing Linux kernel internals and distributed systems troubleshooting.',
           interviewDate: '',
-          resumeUsed: 'Alex_Verma_Backend_Resume.pdf',
+          resumeUsed: `${resumePrefix}_Backend_Resume.pdf`,
           referral: '',
           nextAction: 'Finish Production Engineering prep guide',
         },
@@ -1719,7 +1756,7 @@ export async function ensureUserInitialized(
           appliedAt: futureDate(0),
           notes: 'Cleared distributed inference coding screen. Moving to applied AI systems round.',
           interviewDate: futureDate(7),
-          resumeUsed: 'Alex_Verma_AI_Research_Resume.pdf',
+          resumeUsed: `${resumePrefix}_AI_Research_Resume.pdf`,
           referral: 'GitHub Open Source Maintainer',
           nextAction: 'Prepare RAG latency benchmark walkthrough',
         },
@@ -1787,7 +1824,7 @@ export async function ensureUserInitialized(
             appliedAt: futureDate(-34),
             notes: 'Completed technical & research evaluation rounds. Received fellowship offer!',
             interviewDate: futureDate(-20),
-            resumeUsed: 'Alex_Verma_AI_Research_Resume.pdf',
+            resumeUsed: `${resumePrefix}_AI_Research_Resume.pdf`,
             referral: 'Open Source Maintainer',
             nextAction: 'Review onboarding paperwork',
           },
@@ -1798,7 +1835,7 @@ export async function ensureUserInitialized(
             appliedAt: futureDate(-41),
             notes: 'Passed system architecture screen; final team match interview completed.',
             interviewDate: futureDate(-25),
-            resumeUsed: 'Alex_Verma_FullStack_Resume.pdf',
+            resumeUsed: `${resumePrefix}_FullStack_Resume.pdf`,
             referral: '',
             nextAction: 'Follow up with university recruiter',
           },
@@ -1809,7 +1846,7 @@ export async function ensureUserInitialized(
             appliedAt: futureDate(-49),
             notes: 'Submitted backend systems portfolio and Go benchmarks.',
             interviewDate: '',
-            resumeUsed: 'Alex_Verma_Backend_Resume.pdf',
+            resumeUsed: `${resumePrefix}_Backend_Resume.pdf`,
             referral: 'Alumni Network',
             nextAction: 'Practice concurrency & PostgreSQL indexing questions',
           },
@@ -1817,10 +1854,10 @@ export async function ensureUserInitialized(
             userId: userRecord.id,
             opportunityId: allOpps[8].id,
             status: 'Assessment',
-            appliedAt: futureDate(-64),
+            appliedAt: futureDate(-63),
             notes: 'Completed 90-minute HackerRank C++ and PyTorch assessment.',
             interviewDate: '',
-            resumeUsed: 'Alex_Verma_AI_Research_Resume.pdf',
+            resumeUsed: `${resumePrefix}_AI_Research_Resume.pdf`,
             referral: '',
             nextAction: 'Await technical interview scheduling',
           },
@@ -1831,7 +1868,7 @@ export async function ensureUserInitialized(
             appliedAt: futureDate(-74),
             notes: 'Bookmarked early for summer analyst cohort preparation.',
             interviewDate: '',
-            resumeUsed: 'Alex_Verma_SWE_Intern_2027.pdf',
+            resumeUsed: `${resumePrefix}_SWE_Intern_2027.pdf`,
             referral: '',
             nextAction: 'Complete competitive programming roadmap module',
           },

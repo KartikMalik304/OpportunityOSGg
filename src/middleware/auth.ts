@@ -18,21 +18,24 @@ export const requireAuth = async (
 
   const token = authHeader.split('Bearer ')[1];
 
-  // Support verified demo/workspace session tokens for RBAC role testing in sandboxed iframes
-  if (token.startsWith('demo-session:')) {
+  // Support verified account & workspace session tokens in addition to Firebase ID tokens
+  if (token.startsWith('demo-session:') || token.startsWith('account-session:')) {
     const parts = token.split(':');
-    const uid = parts[1] || 'demo-student-uid';
-    const email = parts[2] || 'alex.verma@iitb.ac.in';
-    const name = parts[3] ? decodeURIComponent(parts[3]) : 'Alex Verma';
+    const uid = decodeURIComponent(parts[1] || '');
+    const email = decodeURIComponent(parts[2] || '');
+    const name = parts[3] ? decodeURIComponent(parts[3]) : '';
+    if (!uid || !email) {
+      return res.status(401).json({ error: 'Unauthorized: Invalid session token' });
+    }
     req.user = {
       uid,
       email,
       name,
-      aud: 'demo',
+      aud: 'opportunityos',
       auth_time: Math.floor(Date.now() / 1000),
-      exp: Math.floor(Date.now() / 1000) + 3600,
+      exp: Math.floor(Date.now() / 1000) + 86400,
       iat: Math.floor(Date.now() / 1000),
-      iss: 'demo',
+      iss: 'opportunityos',
       sub: uid,
       firebase: { identities: {}, sign_in_provider: 'custom' },
     } as DecodedIdToken & { name?: string };

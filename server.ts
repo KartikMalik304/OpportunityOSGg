@@ -28,6 +28,8 @@ import {
   updateStudentProfileAndSkills,
   toggleSaveOpportunityDb,
   upsertApplicationDb,
+  registerUserAccountDb,
+  loginUserAccountDb,
   getRoadmapsWithProgress,
   updateRoadmapStepStatusDb,
   createOpportunityWithDeduplication,
@@ -73,13 +75,51 @@ async function startServer() {
     }
   });
 
+  // Account Sign Up / Create Account Endpoint
+  app.post('/api/auth/signup', async (req, res) => {
+    try {
+      const { name, email } = req.body || {};
+      if (!email || !String(email).includes('@')) {
+        return res.status(400).json({ error: 'Please provide a valid email address.' });
+      }
+      if (!name || !String(name).trim()) {
+        return res.status(400).json({ error: 'Please enter your full name.' });
+      }
+      const result = await registerUserAccountDb(req.body);
+      res.status(201).json(result);
+    } catch (error: any) {
+      console.error('Signup error:', error);
+      res.status(500).json({ error: error.message || 'Failed to create account' });
+    }
+  });
+
+  // Account Sign In / Log In Endpoint
+  app.post('/api/auth/login', async (req, res) => {
+    try {
+      const { email } = req.body || {};
+      if (!email || !String(email).includes('@')) {
+        return res.status(400).json({ error: 'Please enter a valid email address.' });
+      }
+      const result = await loginUserAccountDb(String(email));
+      if (!result.found) {
+        return res.status(404).json({ error: result.error });
+      }
+      res.json(result);
+    } catch (error: any) {
+      console.error('Login error:', error);
+      res.status(500).json({ error: error.message || 'Failed to sign in' });
+    }
+  });
+
   // Public Shareable Student Profile Endpoint (/u/:username)
   app.get('/api/public-profile/:username', async (req, res) => {
     try {
       await ensureSeeded();
       const uname = req.params.username.toLowerCase().trim();
       const userRows = await db.select().from(users).where(eq(users.username, uname));
-      const targetUser = userRows[0] || (await db.select().from(users))[0];
+      const targetUser = userRows.find(
+        (u) => u.role !== 'ADMIN' && u.email.toLowerCase() !== 'kartikchoudhary18122005@gmail.com'
+      );
       if (!targetUser) {
         return res.status(404).json({ error: 'Developer profile not found' });
       }
@@ -101,11 +141,14 @@ async function startServer() {
   app.get('/api/dashboard', requireAuth, async (req: AuthRequest, res) => {
     try {
       const uid = req.user!.uid;
-      const email = req.user!.email || 'alex.verma@iitb.ac.in';
+      const email = req.user!.email || '';
       const name = req.user!.name;
 
       const bundle = await getFullUserBundle(uid, email, name);
-      const isAdminOrOrg = bundle.user.role === 'ADMIN' || bundle.user.role === 'ORGANIZATION';
+      const isOwnerAdmin =
+        bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com' &&
+        bundle.user.role === 'ADMIN';
+      const isAdminOrOrg = isOwnerAdmin || bundle.user.role === 'ORGANIZATION';
 
       const [enrichedOpps, enrichedRoadmaps, calEvents, allUsersRows, allOrgsRows] = await Promise.all([
         getEnrichedOpportunities(
@@ -120,8 +163,16 @@ async function startServer() {
         db.select().from(organizations),
       ]);
 
+      // Do not show Admin/Owner account information on other users' portals
       const leaderboard = allUsersRows
-        .filter((u) => !u.leaderboardOptOut)
+        .filter((u) => {
+          if (u.leaderboardOptOut) return false;
+          const isTargetAdmin =
+            u.role === 'ADMIN' ||
+            u.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com';
+          if (isTargetAdmin && !isOwnerAdmin) return false;
+          return true;
+        })
         .slice(0, 15)
         .map((u, idx) => ({
           rank: idx + 1,
@@ -161,14 +212,17 @@ async function startServer() {
     try {
       const bundle = await getFullUserBundle(
         req.user!.uid,
-        req.user!.email || 'alex.verma@iitb.ac.in',
+        req.user!.email || '',
         req.user!.name
       );
+      const isOwnerAdmin =
+        bundle.user.email.toLowerCase() === 'kartikchoudhary18122005@gmail.com' &&
+        bundle.user.role === 'ADMIN';
       const opps = await getEnrichedOpportunities(
         bundle.studentContext,
         bundle.savedOpportunityIds,
         bundle.applications,
-        bundle.user.role === 'ADMIN'
+        isOwnerAdmin
       );
       res.json(opps);
     } catch (error: any) {
@@ -180,7 +234,7 @@ async function startServer() {
     try {
       const bundle = await getFullUserBundle(
         req.user!.uid,
-        req.user!.email || 'alex.verma@iitb.ac.in',
+        req.user!.email || '',
         req.user!.name
       );
       const opps = await getEnrichedOpportunities(
@@ -203,7 +257,7 @@ async function startServer() {
     try {
       const bundle = await getFullUserBundle(
         req.user!.uid,
-        req.user!.email || 'alex.verma@iitb.ac.in',
+        req.user!.email || '',
         req.user!.name
       );
       const {
@@ -275,9 +329,12 @@ async function startServer() {
     }
   });
 
-  // PUT /api/opportunities/:id (Approve, Reject, Feature, Edit)
+  // PUT /api/opportunities/:id (Approve, Reject, Feature, Edit — Owner Admin only)
   app.put('/api/opportunities/:id', requireAuth, async (req: AuthRequest, res) => {
     try {
+      if (req.user?.email?.toLowerCase() !== 'kartikchoudhary18122005@gmail.com') {
+        return res.status(403).json({ error: 'Forbidden: Only the platform owner/admin can moderate opportunities.' });
+      }
       const oppId = parseInt(req.params.id, 10);
       const { status, featured, title, deadline, stipend, location, description } = req.body;
 
@@ -306,9 +363,12 @@ async function startServer() {
     }
   });
 
-  // DELETE /api/opportunities/:id
+  // DELETE /api/opportunities/:id (Owner Admin only)
   app.delete('/api/opportunities/:id', requireAuth, async (req: AuthRequest, res) => {
     try {
+      if (req.user?.email?.toLowerCase() !== 'kartikchoudhary18122005@gmail.com') {
+        return res.status(403).json({ error: 'Forbidden: Only the platform owner/admin can delete opportunities.' });
+      }
       const oppId = parseInt(req.params.id, 10);
       await db.delete(opportunities).where(eq(opportunities.id, oppId));
       res.json({ deleted: true });
@@ -754,9 +814,12 @@ async function startServer() {
     }
   });
 
-  // Admin Analytics & Partner Ingestion Endpoints
-  app.get('/api/admin/analytics', requireAuth, async (_req: AuthRequest, res) => {
+  // Admin Analytics & Partner Ingestion Endpoints (Strictly restricted to Owner/Admin)
+  app.get('/api/admin/analytics', requireAuth, async (req: AuthRequest, res) => {
     try {
+      if (req.user?.email?.toLowerCase() !== 'kartikchoudhary18122005@gmail.com') {
+        return res.status(403).json({ error: 'Forbidden: Admin access required' });
+      }
       const [allUsers, allOpps, allApps, allSaved, allOrgs, recentEvents] = await Promise.all([
         db.select().from(users),
         db.select().from(opportunities),
@@ -792,6 +855,9 @@ async function startServer() {
 
   app.post('/api/admin/ingest-feed', requireAuth, async (req: AuthRequest, res) => {
     try {
+      if (req.user?.email?.toLowerCase() !== 'kartikchoudhary18122005@gmail.com') {
+        return res.status(403).json({ error: 'Forbidden: Admin access required' });
+      }
       const { feedSource } = req.body;
       const d = new Date();
       d.setDate(d.getDate() + 16);

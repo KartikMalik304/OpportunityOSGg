@@ -268,9 +268,20 @@ export async function updateStudentProfileAndSkills(
 ) {
   try {
     if (payload.name !== undefined || payload.role !== undefined || payload.leaderboardOptOut !== undefined) {
+      const existingUsers = await db.select().from(users).where(eq(users.id, userId));
+      const currentUser = existingUsers[0];
+      const isOwner =
+        currentUser?.email?.toLowerCase() === 'kartikchoudhary18122005@gmail.com';
+
       const userUpdate: Record<string, any> = { updatedAt: new Date() };
       if (payload.name !== undefined) userUpdate.name = payload.name;
-      if (payload.role !== undefined) userUpdate.role = payload.role;
+      if (payload.role !== undefined) {
+        if (payload.role === 'ADMIN' && !isOwner) {
+          userUpdate.role = 'STUDENT';
+        } else {
+          userUpdate.role = payload.role;
+        }
+      }
       if (payload.leaderboardOptOut !== undefined) userUpdate.leaderboardOptOut = payload.leaderboardOptOut;
       await db.update(users).set(userUpdate).where(eq(users.id, userId));
     }
@@ -376,6 +387,7 @@ export async function upsertApplicationDb(
   payload: {
     opportunityId: number;
     status: string;
+    appliedAt?: string;
     notes?: string;
     interviewDate?: string;
     resumeUsed?: string;
@@ -402,9 +414,9 @@ export async function upsertApplicationDb(
         .set({
           status: payload.status,
           appliedAt:
-            payload.status === 'Applied' && !existing[0].appliedAt
-              ? nowDate
-              : existing[0].appliedAt,
+            payload.appliedAt ||
+            existing[0].appliedAt ||
+            nowDate,
           notes: payload.notes !== undefined ? payload.notes : existing[0].notes,
           interviewDate:
             payload.interviewDate !== undefined ? payload.interviewDate : existing[0].interviewDate,
@@ -423,7 +435,7 @@ export async function upsertApplicationDb(
           userId,
           opportunityId: payload.opportunityId,
           status: payload.status || 'Applied',
-          appliedAt: payload.status === 'Applied' ? nowDate : '',
+          appliedAt: payload.appliedAt || nowDate,
           notes: payload.notes || '',
           interviewDate: payload.interviewDate || '',
           resumeUsed: payload.resumeUsed || 'Software_Engineering_Resume_2027.pdf',
@@ -452,6 +464,286 @@ export async function upsertApplicationDb(
   } catch (error) {
     console.error('Database query failed in upsertApplicationDb:', error);
     throw new Error('Failed to save application.', { cause: error });
+  }
+}
+
+export async function registerUserAccountDb(payload: {
+  name: string;
+  email: string;
+  password?: string;
+  role?: 'STUDENT' | 'ORGANIZATION' | 'ADMIN';
+  college?: string;
+  degree?: string;
+  branch?: string;
+  graduationYear?: number;
+  cgpa?: string;
+  country?: string;
+  experienceLevel?: string;
+  skills?: string[];
+  interests?: string[];
+  careerGoals?: string[];
+  preferredWorkModes?: string[];
+}) {
+  try {
+    await ensureSeeded();
+    const cleanEmail = payload.email.trim().toLowerCase();
+    const isOwnerEmail = cleanEmail === 'kartikchoudhary18122005@gmail.com';
+    const cleanName = payload.name.trim() || (isOwnerEmail ? 'Kartik Choudhary' : 'Student Developer');
+    const resolvedRole = isOwnerEmail
+      ? 'ADMIN'
+      : payload.role === 'ORGANIZATION'
+      ? 'ORGANIZATION'
+      : 'STUDENT';
+    const uid = isOwnerEmail
+      ? 'owner-kartik-admin'
+      : `acct-${cleanEmail.replace(/[^a-z0-9]/g, '-')}`;
+    const baseUsername =
+      cleanEmail
+        .split('@')[0]
+        .replace(/[^a-z0-9]/g, '') || 'student';
+
+    const allUsers = await db.select().from(users);
+    let existingUser = allUsers.find(
+      (u) => u.email.toLowerCase() === cleanEmail || u.uid === uid
+    );
+
+    if (!existingUser) {
+      const uniqueUsername = `${baseUsername}${Math.floor(100 + Math.random() * 899)}`;
+      const inserted = await db
+        .insert(users)
+        .values({
+          uid,
+          name: cleanName,
+          email: cleanEmail,
+          username: uniqueUsername,
+          role: resolvedRole,
+          points: isOwnerEmail ? 1650 : 320,
+          streakDays: isOwnerEmail ? 30 : 5,
+        })
+        .returning();
+      existingUser = inserted[0];
+    } else {
+      const updated = await db
+        .update(users)
+        .set({
+          name: cleanName,
+          role: resolvedRole,
+          updatedAt: new Date(),
+        })
+        .where(eq(users.id, existingUser.id))
+        .returning();
+      existingUser = updated[0];
+    }
+
+    const gradYear = Number(payload.graduationYear) || 2027;
+    const currentYear = Math.max(1, Math.min(5, 2029 - gradYear));
+    const selectedSkills =
+      payload.skills && payload.skills.length > 0
+        ? payload.skills
+        : ['Python', 'TypeScript', 'React', 'SQL', 'Git'];
+    const selectedInterests =
+      payload.interests && payload.interests.length > 0
+        ? payload.interests
+        : ['Web Development', 'AI/ML', 'Open Source'];
+    const selectedGoals =
+      payload.careerGoals && payload.careerGoals.length > 0
+        ? payload.careerGoals
+        : ['Internship', 'Hackathon', 'Open source', 'Scholarship'];
+    const selectedModes =
+      payload.preferredWorkModes && payload.preferredWorkModes.length > 0
+        ? payload.preferredWorkModes
+        : ['Remote', 'Hybrid', 'On-site'];
+
+    const existingProf = await db
+      .select()
+      .from(studentProfiles)
+      .where(eq(studentProfiles.userId, existingUser.id));
+
+    const profValues = {
+      userId: existingUser.id,
+      country: payload.country || 'India',
+      state: 'Karnataka',
+      city: 'Bengaluru',
+      college: payload.college || 'Indian Institute of Technology',
+      degree: payload.degree || 'B.Tech',
+      branch: payload.branch || 'Computer Science & Engineering',
+      graduationYear: gradYear,
+      currentYear,
+      cgpa: String(payload.cgpa || '8.7'),
+      backlogs: 0,
+      bio: `${payload.degree || 'B.Tech'} in ${payload.branch || 'Computer Science'} (${gradYear}) focused on ${selectedInterests.join(', ')}.`,
+      interests: JSON.stringify(selectedInterests),
+      careerGoals: JSON.stringify(selectedGoals),
+      preferredWorkModes: JSON.stringify(selectedModes),
+      preferredLocations: JSON.stringify([payload.country || 'India', 'International']),
+      experienceLevel: payload.experienceLevel || 'Intermediate',
+      onboardingCompleted: true,
+      resumeSkills: JSON.stringify(selectedSkills),
+    };
+
+    if (existingProf.length === 0) {
+      await db.insert(studentProfiles).values(profValues);
+    } else {
+      await db
+        .update(studentProfiles)
+        .set(profValues)
+        .where(eq(studentProfiles.userId, existingUser.id));
+    }
+
+    // Sync userSkills
+    const allSkillsRows = await db.select().from(skills);
+    const skillMap = new Map(allSkillsRows.map((s) => [s.name.toLowerCase(), s.id]));
+    await db.delete(userSkills).where(eq(userSkills.userId, existingUser.id));
+    for (const skName of selectedSkills) {
+      const skId = skillMap.get(skName.toLowerCase().trim());
+      if (skId) {
+        await db.insert(userSkills).values({
+          userId: existingUser.id,
+          skillId: skId,
+          proficiency: 'Intermediate',
+        });
+      }
+    }
+
+    // Ensure welcome notification & starter application history exist for this account
+    const existingNotifs = await db
+      .select()
+      .from(notifications)
+      .where(eq(notifications.userId, existingUser.id));
+    if (existingNotifs.length === 0) {
+      await db.insert(notifications).values([
+        {
+          userId: existingUser.id,
+          title: `Welcome to OpportunityOS, ${cleanName}!`,
+          message: `Your ${payload.degree || 'B.Tech'} (${gradYear}) account is active. Opportunities are now ranked for your skills: ${selectedSkills.slice(0, 5).join(', ')}.`,
+          type: 'MATCH',
+          read: false,
+        },
+      ]);
+    }
+
+    const token = `account-session:${encodeURIComponent(existingUser.uid)}:${encodeURIComponent(
+      existingUser.email
+    )}:${encodeURIComponent(existingUser.name)}`;
+
+    return { token, user: existingUser };
+  } catch (error) {
+    console.error('Database query failed in registerUserAccountDb:', error);
+    throw new Error('Failed to create user account.', { cause: error });
+  }
+}
+
+export async function loginUserAccountDb(email: string) {
+  try {
+    await ensureSeeded();
+    const cleanEmail = email.trim().toLowerCase();
+    const isOwnerEmail = cleanEmail === 'kartikchoudhary18122005@gmail.com';
+
+    if (isOwnerEmail) {
+      const ownerRecord = await ensureUserInitialized(
+        'owner-kartik-admin',
+        'kartikchoudhary18122005@gmail.com',
+        'Kartik Choudhary'
+      );
+      const token = `account-session:${encodeURIComponent(ownerRecord.uid)}:${encodeURIComponent(
+        ownerRecord.email
+      )}:${encodeURIComponent(ownerRecord.name)}`;
+      return { found: true, token, user: ownerRecord };
+    }
+
+    const allUsers = await db.select().from(users);
+    const foundUser = allUsers.find((u) => u.email.toLowerCase() === cleanEmail);
+
+    if (!foundUser) {
+      return {
+        found: false,
+        error: 'No account found with that email. Click "Create New Account" to sign up and personalize your opportunities.',
+      };
+    }
+
+    // Ensure seeded peer accounts have rich, distinct skills & profile preferences so their opportunities match their persona
+    const existingSkills = await db
+      .select()
+      .from(userSkills)
+      .where(eq(userSkills.userId, foundUser.id));
+
+    if (existingSkills.length === 0) {
+      const allSkillsRows = await db.select().from(skills);
+      const skillMap = new Map(allSkillsRows.map((s) => [s.name.toLowerCase(), s.id]));
+
+      let personaSkills = ['Python', 'TypeScript', 'React', 'SQL', 'Git'];
+      let personaInterests = ['Web Development', 'AI/ML', 'Open Source'];
+      let personaGoals = ['Internship', 'Open source', 'Hackathon'];
+      let personaDegree = 'B.Tech';
+      let personaBranch = 'Computer Science';
+      let personaGradYear = 2027;
+      let personaCgpa = '9.0';
+      let personaLevel = 'Intermediate';
+
+      if (cleanEmail.includes('priya')) {
+        personaSkills = ['Python', 'PyTorch', 'TensorFlow', 'Machine Learning', 'Deep Learning', 'NLP', 'Data Science', 'SQL'];
+        personaInterests = ['AI/ML', 'Data Science', 'Research'];
+        personaGoals = ['Research', 'Internship', 'Scholarship', 'Fellowship'];
+        personaDegree = 'M.Tech';
+        personaBranch = 'Artificial Intelligence & Data Science';
+        personaGradYear = 2026;
+        personaCgpa = '9.4';
+        personaLevel = 'Advanced';
+      } else if (cleanEmail.includes('arjun')) {
+        personaSkills = ['C++', 'Rust', 'C', 'Linux', 'Data Structures', 'Algorithms', 'Git', 'Docker'];
+        personaInterests = ['Competitive Programming', 'Open Source', 'Cybersecurity'];
+        personaGoals = ['Coding Contest', 'Open source', 'Hackathon', 'Internship'];
+        personaDegree = 'B.E.';
+        personaBranch = 'Computer Science & Systems';
+        personaGradYear = 2028;
+        personaCgpa = '8.5';
+        personaLevel = 'Beginner';
+      } else if (cleanEmail.includes('elena')) {
+        personaSkills = ['Go', 'Kubernetes', 'Docker', 'AWS', 'TypeScript', 'PostgreSQL', 'Linux', 'System Design'];
+        personaInterests = ['Cloud', 'DevOps', 'Open Source', 'Web Development'];
+        personaGoals = ['Open source', 'Internship', 'Full-time job'];
+        personaDegree = 'MS';
+        personaBranch = 'Distributed Computing Systems';
+        personaGradYear = 2026;
+        personaCgpa = '9.2';
+        personaLevel = 'Advanced';
+      }
+
+      await db
+        .update(studentProfiles)
+        .set({
+          degree: personaDegree,
+          branch: personaBranch,
+          graduationYear: personaGradYear,
+          cgpa: personaCgpa,
+          experienceLevel: personaLevel,
+          interests: JSON.stringify(personaInterests),
+          careerGoals: JSON.stringify(personaGoals),
+          resumeSkills: JSON.stringify(personaSkills),
+          onboardingCompleted: true,
+        })
+        .where(eq(studentProfiles.userId, foundUser.id));
+
+      for (const skName of personaSkills) {
+        const skId = skillMap.get(skName.toLowerCase());
+        if (skId) {
+          await db.insert(userSkills).values({
+            userId: foundUser.id,
+            skillId: skId,
+            proficiency: 'Advanced',
+          });
+        }
+      }
+    }
+
+    const token = `account-session:${encodeURIComponent(foundUser.uid)}:${encodeURIComponent(
+      foundUser.email
+    )}:${encodeURIComponent(foundUser.name)}`;
+
+    return { found: true, token, user: foundUser };
+  } catch (error) {
+    console.error('Database query failed in loginUserAccountDb:', error);
+    throw new Error('Failed to sign in.', { cause: error });
   }
 }
 
