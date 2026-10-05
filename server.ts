@@ -582,17 +582,18 @@ async function startServer() {
       if (!goalPrompt) {
         return res.status(400).json({ error: 'Please enter a learning goal.' });
       }
-      const generated = await generateCustomRoadmap(goalPrompt);
+      const studentSkillNames = bundle.skills.map((s) => s.name);
+      const generated = await generateCustomRoadmap(String(goalPrompt).trim(), studentSkillNames);
       const slug = `ai-roadmap-${Date.now()}`;
 
       const insertedRm = await db
         .insert(roadmaps)
         .values({
-          title: generated.title,
+          title: generated.title || `AI Roadmap: ${String(goalPrompt).trim().slice(0, 60)}`,
           slug,
-          description: generated.description,
+          description: generated.description || `Personalized AI curriculum for ${goalPrompt}`,
           category: generated.category || 'AI Generated',
-          estimatedWeeks: generated.estimatedWeeks || 10,
+          estimatedWeeks: Number(generated.estimatedWeeks) || 10,
           difficulty: generated.difficulty || 'Intermediate',
           createdByUserId: bundle.user.id,
         })
@@ -603,14 +604,14 @@ async function startServer() {
         const st = generated.steps[i];
         await db.insert(roadmapSteps).values({
           roadmapId: rmId,
-          title: st.title,
-          description: st.description,
+          title: st.title || `Step ${i + 1}`,
+          description: st.description || '',
           stepOrder: i + 1,
-          estimatedHours: st.estimatedHours || 14,
+          estimatedHours: Number(st.estimatedHours) || 14,
           skillName: st.skillName || 'TypeScript',
-          resourcesJson: JSON.stringify(st.resources || []),
-          projectsJson: JSON.stringify(st.projects || []),
-          problemsJson: JSON.stringify(st.problems || []),
+          resourcesJson: JSON.stringify(Array.isArray(st.resources) ? st.resources : []),
+          projectsJson: JSON.stringify(Array.isArray(st.projects) ? st.projects : []),
+          problemsJson: JSON.stringify(Array.isArray(st.problems) ? st.problems : []),
         });
       }
 

@@ -96,13 +96,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [cgpa, setCgpa] = useState('8.8');
   const [country, setCountry] = useState('India');
   const [experienceLevel, setExperienceLevel] = useState('Intermediate');
-  const [selectedSkills, setSelectedSkills] = useState<string[]>([
-    'Python',
-    'TypeScript',
-    'React',
-    'Data Structures',
-    'Git',
-  ]);
+  const [availableSkills, setAvailableSkills] = useState<string[]>(SKILL_OPTIONS);
+  const [customAddedSkills, setCustomAddedSkills] = useState<string[]>([]);
+  const [customSkillInput, setCustomSkillInput] = useState('');
+  const [selectedSkills, setSelectedSkills] = useState<string[]>([]);
   const [selectedGoals, setSelectedGoals] = useState<string[]>([
     'Internship',
     'Hackathon',
@@ -120,6 +117,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     } else {
       setter([...list, item]);
     }
+  };
+
+  const handleAddCustomSkill = () => {
+    const rawParts = customSkillInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (rawParts.length === 0) return;
+
+    let nextAvailable = [...availableSkills];
+    let nextCustom = [...customAddedSkills];
+    let nextSelected = [...selectedSkills];
+
+    for (const part of rawParts) {
+      const cleaned = part.slice(0, 45);
+      const existingMatch = nextAvailable.find(
+        (k) => k.toLowerCase() === cleaned.toLowerCase()
+      );
+      const canonical = existingMatch || cleaned;
+
+      if (!existingMatch) {
+        nextAvailable.push(canonical);
+        if (!nextCustom.includes(canonical)) {
+          nextCustom.push(canonical);
+        }
+      }
+      if (!nextSelected.some((k) => k.toLowerCase() === canonical.toLowerCase())) {
+        nextSelected.push(canonical);
+      }
+    }
+
+    setAvailableSkills(nextAvailable);
+    setCustomAddedSkills(nextCustom);
+    setSelectedSkills(nextSelected);
+    setCustomSkillInput('');
+    setError(null);
   };
 
   const handleLoginSubmit = async (e: React.FormEvent) => {
@@ -141,6 +174,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setError(null);
     if (!name.trim() || !email.trim()) {
       setError('Please enter your full name and email address.');
+      return;
+    }
+    if (role === 'STUDENT' && selectedSkills.length === 0) {
+      setError('Please select at least 1 skill (or add your own custom skill below) to personalize your opportunities.');
       return;
     }
     setLoading(true);
@@ -471,18 +508,31 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Select Technical Skills */}
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-slate-900 dark:text-white">
-                    Select Your Skills ({selectedSkills.length} selected)
-                  </label>
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/40 dark:bg-slate-900/20 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-900 dark:text-white">
+                      Select Your Skills ({selectedSkills.length} selected) *
+                    </label>
+                    {selectedSkills.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedSkills([])}
+                        className="text-[11px] font-medium text-rose-600 dark:text-rose-400 hover:underline cursor-pointer"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
                   <span className="text-[11px] text-slate-500">
-                    Used for 30% Skill Match & Gap Analysis
+                    Click to select your skills · Used for 30% Skill Match & Gap Analysis
                   </span>
                 </div>
+
                 <div className="flex flex-wrap gap-1.5">
-                  {SKILL_OPTIONS.map((sk) => {
+                  {availableSkills.map((sk) => {
                     const active = selectedSkills.includes(sk);
+                    const isCustom = customAddedSkills.includes(sk);
                     return (
                       <button
                         key={sk}
@@ -491,13 +541,44 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         className={`px-2.5 py-1 text-xs rounded-md border transition-colors cursor-pointer ${
                           active
                             ? 'bg-blue-600 text-white border-blue-600 font-semibold'
-                            : 'border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-400'
+                            : 'bg-white dark:bg-slate-950 border-slate-300 dark:border-slate-800 text-slate-600 dark:text-slate-400 hover:border-slate-400'
                         }`}
                       >
                         {active ? `✓ ${sk}` : sk}
+                        {isCustom ? ' (Custom)' : ''}
                       </button>
                     );
                   })}
+                </div>
+
+                {/* Add Custom Skill Input Bar */}
+                <div className="pt-2 border-t border-slate-200/80 dark:border-slate-800/80">
+                  <label className="block text-[11px] font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Skill not available above? Add your own customized skill(s):
+                  </label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="text"
+                      value={customSkillInput}
+                      onChange={(e) => setCustomSkillInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          handleAddCustomSkill();
+                        }
+                      }}
+                      placeholder="Type any skill (e.g. Solidity, Flutter, Spring Boot, MATLAB, Figma)..."
+                      className="flex-1 px-3 py-1.5 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-950 text-slate-900 dark:text-white"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddCustomSkill}
+                      disabled={!customSkillInput.trim()}
+                      className="px-3.5 py-1.5 text-xs font-semibold text-white bg-slate-900 dark:bg-blue-600 hover:bg-slate-800 dark:hover:bg-blue-500 rounded-lg transition-colors cursor-pointer whitespace-nowrap disabled:opacity-40"
+                    >
+                      + Add Custom Skill
+                    </button>
+                  </div>
                 </div>
               </div>
 

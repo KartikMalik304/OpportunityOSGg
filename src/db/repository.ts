@@ -19,7 +19,7 @@ import {
   analyticsEvents,
 } from './schema.ts';
 import { and, desc, eq, asc } from 'drizzle-orm';
-import { ensureSeeded, ensureUserInitialized } from './seed.ts';
+import { ensureSeeded, ensureUserInitialized, INITIAL_ROADMAPS } from './seed.ts';
 import {
   computeOpportunityMatch,
   type StudentContext,
@@ -234,6 +234,68 @@ export async function getEnrichedOpportunities(
   }
 }
 
+export async function syncUserSkillsWithCustomSupport(
+  userId: number,
+  rawSkillNames: string[]
+): Promise<string[]> {
+  const cleanedNames: string[] = [];
+  const seenLower = new Set<string>();
+
+  for (const raw of rawSkillNames || []) {
+    const trimmed = String(raw || '').trim().slice(0, 60);
+    if (!trimmed) continue;
+    const lower = trimmed.toLowerCase();
+    if (!seenLower.has(lower)) {
+      seenLower.add(lower);
+      cleanedNames.push(trimmed);
+    }
+  }
+
+  let allSkillsRows = await db.select().from(skills);
+  let skillMap = new Map(allSkillsRows.map((s) => [s.name.toLowerCase(), s]));
+
+  let insertedAnyCustom = false;
+  for (const skName of cleanedNames) {
+    if (!skillMap.has(skName.toLowerCase())) {
+      await db
+        .insert(skills)
+        .values({
+          name: skName,
+          category: 'Custom',
+        })
+        .onConflictDoNothing({ target: skills.name });
+      insertedAnyCustom = true;
+    }
+  }
+
+  if (insertedAnyCustom) {
+    allSkillsRows = await db.select().from(skills);
+    skillMap = new Map(allSkillsRows.map((s) => [s.name.toLowerCase(), s]));
+  }
+
+  await db.delete(userSkills).where(eq(userSkills.userId, userId));
+
+  const canonicalNames: string[] = [];
+  for (const skName of cleanedNames) {
+    const matched = skillMap.get(skName.toLowerCase());
+    if (matched) {
+      canonicalNames.push(matched.name);
+      await db.insert(userSkills).values({
+        userId,
+        skillId: matched.id,
+        proficiency: 'Intermediate',
+      });
+    }
+  }
+
+  await db
+    .update(studentProfiles)
+    .set({ resumeSkills: JSON.stringify(canonicalNames) })
+    .where(eq(studentProfiles.userId, userId));
+
+  return canonicalNames;
+}
+
 export async function updateStudentProfileAndSkills(
   userId: number,
   payload: {
@@ -319,20 +381,7 @@ export async function updateStudentProfileAndSkills(
     }
 
     if (Array.isArray(payload.skillNames)) {
-      const allSkillsRows = await db.select().from(skills);
-      const skillMap = new Map(allSkillsRows.map((s) => [s.name.toLowerCase(), s.id]));
-
-      await db.delete(userSkills).where(eq(userSkills.userId, userId));
-      for (const skName of payload.skillNames) {
-        const skId = skillMap.get(skName.toLowerCase());
-        if (skId) {
-          await db.insert(userSkills).values({
-            userId,
-            skillId: skId,
-            proficiency: 'Intermediate',
-          });
-        }
-      }
+      await syncUserSkillsWithCustomSupport(userId, payload.skillNames);
     }
 
     await db.insert(analyticsEvents).values({
@@ -537,10 +586,9 @@ export async function registerUserAccountDb(payload: {
 
     const gradYear = Number(payload.graduationYear) || 2027;
     const currentYear = Math.max(1, Math.min(5, 2029 - gradYear));
-    const selectedSkills =
-      payload.skills && payload.skills.length > 0
-        ? payload.skills
-        : ['Python', 'TypeScript', 'React', 'SQL', 'Git'];
+    const selectedSkills = Array.isArray(payload.skills)
+      ? payload.skills.map((s) => String(s).trim()).filter(Boolean)
+      : [];
     const selectedInterests =
       payload.interests && payload.interests.length > 0
         ? payload.interests
@@ -590,20 +638,11 @@ export async function registerUserAccountDb(payload: {
         .where(eq(studentProfiles.userId, existingUser.id));
     }
 
-    // Sync userSkills
-    const allSkillsRows = await db.select().from(skills);
-    const skillMap = new Map(allSkillsRows.map((s) => [s.name.toLowerCase(), s.id]));
-    await db.delete(userSkills).where(eq(userSkills.userId, existingUser.id));
-    for (const skName of selectedSkills) {
-      const skId = skillMap.get(skName.toLowerCase().trim());
-      if (skId) {
-        await db.insert(userSkills).values({
-          userId: existingUser.id,
-          skillId: skId,
-          proficiency: 'Intermediate',
-        });
-      }
-    }
+    // Sync userSkills (including any custom skills added by the user)
+    const canonicalSelectedSkills = await syncUserSkillsWithCustomSupport(
+      existingUser.id,
+      selectedSkills
+    );
 
     // Ensure welcome notification & starter application history exist for this account
     const existingNotifs = await db
@@ -615,7 +654,10 @@ export async function registerUserAccountDb(payload: {
         {
           userId: existingUser.id,
           title: `Welcome to OpportunityOS, ${cleanName}!`,
-          message: `Your ${payload.degree || 'B.Tech'} (${gradYear}) account is active. Opportunities are now ranked for your skills: ${selectedSkills.slice(0, 5).join(', ')}.`,
+          message:
+            canonicalSelectedSkills.length > 0
+              ? `Your ${payload.degree || 'B.Tech'} (${gradYear}) account is active. Opportunities are now ranked for your skills: ${canonicalSelectedSkills.slice(0, 6).join(', ')}.`
+              : `Your ${payload.degree || 'B.Tech'} (${gradYear}) account is active. Add or update skills anytime in your Profile.`,
           type: 'MATCH',
           read: false,
         },
@@ -691,13 +733,19 @@ export async function loginUserAccountDb(email: string) {
       };
     }
 
-    // Ensure seeded peer accounts have rich, distinct skills & profile preferences so their opportunities match their persona
+    // Ensure seeded peer demo accounts have their persona skills if not yet populated
+    const isSeededPeerAccount =
+      cleanEmail === 'priya.sharma@iitd.ac.in' ||
+      cleanEmail === 'arjun.mehta@bits-pilani.ac.in' ||
+      cleanEmail === 'elena.r@eth.ch' ||
+      cleanEmail === 'rohan.k@nitk.edu.in';
+
     const existingSkills = await db
       .select()
       .from(userSkills)
       .where(eq(userSkills.userId, foundUser.id));
 
-    if (existingSkills.length === 0) {
+    if (isSeededPeerAccount && existingSkills.length === 0) {
       const allSkillsRows = await db.select().from(skills);
       const skillMap = new Map(allSkillsRows.map((s) => [s.name.toLowerCase(), s.id]));
 
@@ -796,11 +844,50 @@ export async function loginUserAccountDb(email: string) {
 export async function getRoadmapsWithProgress(userId: number) {
   try {
     await ensureSeeded();
-    const [allRoadmaps, allSteps, userProg] = await Promise.all([
+    let [allRoadmaps, allSteps, userProg] = await Promise.all([
       db.select().from(roadmaps).orderBy(asc(roadmaps.id)),
       db.select().from(roadmapSteps).orderBy(asc(roadmapSteps.stepOrder)),
       db.select().from(userRoadmapProgress).where(eq(userRoadmapProgress.userId, userId)),
     ]);
+
+    // Guarantee initial roadmaps are always seeded even if database was partially initialized
+    if (allRoadmaps.length === 0) {
+      for (const rm of INITIAL_ROADMAPS) {
+        const insertedRm = await db
+          .insert(roadmaps)
+          .values({
+            title: rm.title,
+            slug: rm.slug,
+            description: rm.description,
+            category: rm.category,
+            estimatedWeeks: rm.estimatedWeeks,
+            difficulty: rm.difficulty,
+          })
+          .onConflictDoNothing({ target: roadmaps.slug })
+          .returning();
+
+        if (insertedRm.length > 0) {
+          const rmId = insertedRm[0].id;
+          for (const step of rm.steps) {
+            await db.insert(roadmapSteps).values({
+              roadmapId: rmId,
+              title: step.title,
+              description: step.description,
+              stepOrder: step.stepOrder,
+              estimatedHours: step.estimatedHours,
+              skillName: step.skillName,
+              resourcesJson: JSON.stringify(step.resources),
+              projectsJson: JSON.stringify(step.projects),
+              problemsJson: JSON.stringify(step.problems),
+            });
+          }
+        }
+      }
+      [allRoadmaps, allSteps] = await Promise.all([
+        db.select().from(roadmaps).orderBy(asc(roadmaps.id)),
+        db.select().from(roadmapSteps).orderBy(asc(roadmapSteps.stepOrder)),
+      ]);
+    }
 
     const progMap = new Map(userProg.map((p) => [p.roadmapStepId, p.status]));
 

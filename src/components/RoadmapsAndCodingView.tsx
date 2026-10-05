@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Check,
   Sparkles,
@@ -12,6 +12,7 @@ import {
   Copy,
   Trophy,
   Plus,
+  X,
 } from 'lucide-react';
 import {
   DashboardBundle,
@@ -40,27 +41,43 @@ export const RoadmapsView: React.FC<RoadmapsViewProps> = ({
   const [aiGoalPrompt, setAiGoalPrompt] = useState('');
   const [generatingAi, setGeneratingAi] = useState(false);
   const [generatedNotice, setGeneratedNotice] = useState<string | null>(null);
+  const [generateError, setGenerateError] = useState<string | null>(null);
   const [updatingStepId, setUpdatingStepId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (roadmaps.length > 0 && !roadmaps.some((r) => r.id === selectedRoadmapId)) {
+      setSelectedRoadmapId(roadmaps[0].id);
+    }
+  }, [roadmaps, selectedRoadmapId]);
 
   const activeRoadmap =
     roadmaps.find((r) => r.id === selectedRoadmapId) || roadmaps[0];
 
-  const handleGenerate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!aiGoalPrompt.trim()) return;
-    const goalText = aiGoalPrompt.trim();
+  const triggerGenerateRoadmap = async (goalText: string) => {
+    const cleaned = goalText.trim();
+    if (!cleaned || generatingAi) return;
     setGeneratingAi(true);
     setGeneratedNotice(null);
+    setGenerateError(null);
     try {
-      const newId = await onGenerateAiRoadmap(goalText);
+      const newId = await onGenerateAiRoadmap(cleaned);
       if (typeof newId === 'number') {
         setSelectedRoadmapId(newId);
+      } else if (roadmaps.length > 0) {
+        setSelectedRoadmapId(roadmaps[roadmaps.length - 1].id);
       }
-      setGeneratedNotice(`✓ Generated custom AI roadmap for "${goalText}" and selected it below.`);
+      setGeneratedNotice(`✓ Generated custom AI roadmap for "${cleaned}" and selected it below.`);
       setAiGoalPrompt('');
+    } catch (err: any) {
+      setGenerateError(err?.message || 'Unable to generate AI roadmap. Please try again.');
     } finally {
       setGeneratingAi(false);
     }
+  };
+
+  const handleGenerate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await triggerGenerateRoadmap(aiGoalPrompt);
   };
 
   const handleStepClick = async (stepId: number, nextStatus: string) => {
@@ -115,12 +132,45 @@ export const RoadmapsView: React.FC<RoadmapsViewProps> = ({
             disabled={generatingAi || !aiGoalPrompt.trim()}
             className="px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors whitespace-nowrap cursor-pointer disabled:opacity-50"
           >
-            {generatingAi ? 'Generating Roadmap...' : 'Generate AI Roadmap'}
+            {generatingAi ? 'Generating AI Roadmap...' : 'Generate AI Roadmap'}
           </button>
         </form>
+
+        {/* 1-Click AI Roadmap Preset Prompts */}
+        <div className="mt-3 flex flex-wrap items-center gap-1.5 text-[11px]">
+          <span className="text-slate-500 dark:text-slate-400 font-medium mr-1">
+            Quick AI Presets:
+          </span>
+          {[
+            'AI/ML, PyTorch & LLM Engineering Intern',
+            'Distributed Backend Systems in Go & PostgreSQL',
+            'Rust Systems & Google Summer of Code (GSoC)',
+            'Full-Stack Next.js, TypeScript & Cloud Architect',
+            'Quantitative Trading & C++ Low-Latency Systems',
+          ].map((preset) => (
+            <button
+              key={preset}
+              type="button"
+              disabled={generatingAi}
+              onClick={() => {
+                setAiGoalPrompt(preset);
+                triggerGenerateRoadmap(preset);
+              }}
+              className="px-2.5 py-1 rounded-md border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-950 text-slate-600 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer disabled:opacity-40"
+            >
+              + {preset}
+            </button>
+          ))}
+        </div>
+
         {generatedNotice && (
           <p className="mt-2.5 text-xs font-medium text-emerald-600 dark:text-emerald-400">
             {generatedNotice}
+          </p>
+        )}
+        {generateError && (
+          <p className="mt-2.5 text-xs font-medium text-rose-600 dark:text-rose-400">
+            {generateError}
           </p>
         )}
       </div>
@@ -603,8 +653,47 @@ export const DeveloperProfileView: React.FC<DeveloperProfileViewProps> = ({
   const [resumeResult, setResumeResult] = useState<any | null>(null);
   const [copiedPublicUrl, setCopiedPublicUrl] = useState(false);
   const [showPublicPreview, setShowPublicPreview] = useState(false);
+  const [customProfileSkillInput, setCustomProfileSkillInput] = useState('');
+  const [savingCustomSkill, setSavingCustomSkill] = useState(false);
 
   const publicProfileUrl = `${window.location.origin}/u/${bundle.user.username}`;
+
+  const handleAddSkillFromProfile = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const parts = customProfileSkillInput
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (parts.length === 0 || savingCustomSkill) return;
+
+    setSavingCustomSkill(true);
+    try {
+      const currentNames = bundle.skills.map((s) => s.name);
+      const nextNames = [...currentNames];
+      for (const p of parts) {
+        if (!nextNames.some((existing) => existing.toLowerCase() === p.toLowerCase())) {
+          nextNames.push(p.slice(0, 45));
+        }
+      }
+      await onSaveProfile({ skillNames: nextNames });
+      setCustomProfileSkillInput('');
+    } finally {
+      setSavingCustomSkill(false);
+    }
+  };
+
+  const handleRemoveSkillFromProfile = async (skillNameToRemove: string) => {
+    if (savingCustomSkill) return;
+    setSavingCustomSkill(true);
+    try {
+      const nextNames = bundle.skills
+        .map((s) => s.name)
+        .filter((n) => n.toLowerCase() !== skillNameToRemove.toLowerCase());
+      await onSaveProfile({ skillNames: nextNames });
+    } finally {
+      setSavingCustomSkill(false);
+    }
+  };
 
   const handleResumeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -732,6 +821,71 @@ export const DeveloperProfileView: React.FC<DeveloperProfileViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Active Skills & Custom Skill Adder Card */}
+      <div className="p-6 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900/40 space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h3 className="text-base font-bold text-slate-900 dark:text-white">
+              Your Selected Skills & Custom Skill Manager ({bundle.skills.length})
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Add any customized skill if not available in the standard catalog, or click × to remove a skill. Opportunity matches update automatically.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onOpenOnboarding}
+            className="text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
+          >
+            Open Full Skill Catalog →
+          </button>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
+          {bundle.skills.length === 0 ? (
+            <p className="text-xs text-slate-500 italic">
+              No skills selected yet. Add your skills below to personalize opportunity matching.
+            </p>
+          ) : (
+            bundle.skills.map((sk) => (
+              <span
+                key={sk.id}
+                className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-medium rounded-lg border border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300"
+              >
+                <span>{sk.name}</span>
+                <button
+                  type="button"
+                  disabled={savingCustomSkill}
+                  onClick={() => handleRemoveSkillFromProfile(sk.name)}
+                  title={`Remove ${sk.name}`}
+                  className="hover:text-rose-500 cursor-pointer"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              </span>
+            ))
+          )}
+        </div>
+
+        <form onSubmit={handleAddSkillFromProfile} className="flex flex-col sm:flex-row gap-2.5 pt-2">
+          <input
+            type="text"
+            value={customProfileSkillInput}
+            onChange={(e) => setCustomProfileSkillInput(e.target.value)}
+            placeholder="Add custom skill not in list (e.g. Solidity, Flutter, Spring Boot, MATLAB)..."
+            className="flex-1 px-3.5 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-white"
+          />
+          <button
+            type="submit"
+            disabled={savingCustomSkill || !customProfileSkillInput.trim()}
+            className="inline-flex items-center justify-center gap-1.5 px-4 py-2 text-xs font-semibold text-white bg-blue-600 hover:bg-blue-500 rounded-lg cursor-pointer whitespace-nowrap disabled:opacity-40"
+          >
+            <Plus className="w-3.5 h-3.5" />
+            <span>{savingCustomSkill ? 'Saving Skill...' : 'Add Custom Skill'}</span>
+          </button>
+        </form>
+      </div>
 
       {/* Resume Analyzer & AI Skill Gap Matcher */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">

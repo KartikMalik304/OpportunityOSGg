@@ -201,14 +201,18 @@ Deadline: ${params.deadline}.`,
   };
 }
 
-export async function generateCustomRoadmap(goalPrompt: string) {
+export async function generateCustomRoadmap(goalPrompt: string, studentSkills: string[] = []) {
+  const cleanGoal = (goalPrompt || 'Full-Stack & Distributed Systems Engineer').trim();
   const ai = getGeminiClient();
   if (ai) {
     try {
       const response = await ai.models.generateContent({
-        model: 'gemini-3.8-flash',
-        contents: `Create a structured technical learning roadmap for a student who says: "${goalPrompt}". Provide 6 sequential steps with estimated hours, key skill name, resources, and a concrete milestone project.`,
+        model: 'gemini-3.1-flash-lite',
+        contents: `Create a structured technical learning roadmap for a student whose goal is: "${cleanGoal}".
+Current Student Skills: ${(studentSkills || []).join(', ') || 'Foundational Programming'}.
+Provide 6 sequential steps with estimated hours, key skill name unlocked in each step, 2-3 concrete learning resources, 1-2 milestone projects, and 2-3 practice problems.`,
         config: {
+          thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL },
           systemInstruction:
             'You are a senior engineering mentor on OpportunityOS. Return valid JSON matching the schema.',
           responseMimeType: 'application/json',
@@ -242,60 +246,135 @@ export async function generateCustomRoadmap(goalPrompt: string) {
         },
       });
       if (response.text) {
-        return JSON.parse(response.text.trim());
+        const parsed = JSON.parse(response.text.trim());
+        if (parsed && Array.isArray(parsed.steps) && parsed.steps.length > 0) {
+          return parsed;
+        }
       }
     } catch (err) {
       console.warn('Gemini roadmap generation fallback:', err);
     }
   }
 
-  const cleanTopic = goalPrompt.replace(/i want to become a|i want to learn/gi, '').trim() || 'Backend Systems Engineer';
+  const cleanTopic =
+    cleanGoal
+      .replace(/^(i want to become a|i want to become an|i want to learn|prepare for|how to crack)\s+/gi, '')
+      .trim() || 'Software Systems Engineer';
+  const formattedTopic = cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1);
+  const lower = cleanTopic.toLowerCase();
+
+  if (lower.includes('ai') || lower.includes('ml') || lower.includes('llm') || lower.includes('deep learning') || lower.includes('data')) {
+    return {
+      title: `AI Pathway: ${formattedTopic}`,
+      category: 'AI & Machine Learning',
+      description: `End-to-end AI engineering roadmap tailored for "${cleanGoal}" covering mathematical foundations, PyTorch neural architectures, RAG/LLM pipelines, and inference optimization.`,
+      estimatedWeeks: 10,
+      difficulty: 'Intermediate to Advanced',
+      steps: [
+        {
+          title: '01. Python, Vectorized NumPy & Linear Algebra Foundations',
+          description: 'Master matrix calculus, probability distributions, and high-performance tensor manipulation in Python.',
+          estimatedHours: 14,
+          skillName: 'Python',
+          resources: ['Mathematics for Machine Learning', 'NumPy Vectorization Guide'],
+          projects: ['Custom Autograd & Matrix Engine from Scratch'],
+          problems: ['Batch Matrix Multiplication', 'Cosine Similarity Search Index'],
+        },
+        {
+          title: '02. Classical Machine Learning & Feature Engineering',
+          description: 'Implement gradient boosting, regularization, cross-validation, and evaluation metrics.',
+          estimatedHours: 16,
+          skillName: 'Machine Learning',
+          resources: ['Scikit-Learn User Guide', 'StatQuest ML Series'],
+          projects: ['Student Opportunity Match & Ranking Classifier'],
+          problems: ['K-Means Clustering from Scratch', 'Logistic Regression with L2 Penalty'],
+        },
+        {
+          title: '03. Deep Learning & Neural Architectures in PyTorch',
+          description: 'Build CNNs, RNNs, custom DataLoaders, and mixed-precision training loops with PyTorch.',
+          estimatedHours: 18,
+          skillName: 'PyTorch',
+          resources: ['PyTorch Official Tutorials', 'Fast.ai Practical Deep Learning'],
+          projects: ['Multi-Label Document & Resume Classifier in PyTorch'],
+          problems: ['Custom PyTorch Autograd Function', 'Learning Rate Warmup Scheduler'],
+        },
+        {
+          title: '04. Transformers, Attention Mechanisms & NLP',
+          description: 'Implement multi-head self-attention, tokenization (BPE), and fine-tuning with LoRA/PEFT.',
+          estimatedHours: 20,
+          skillName: 'NLP',
+          resources: ['The Illustrated Transformer', 'Hugging Face NLP Course'],
+          projects: ['Fine-Tuned Domain-Specific Transformer Model'],
+          problems: ['Scaled Dot-Product Attention Implementation', 'Byte-Pair Tokenizer'],
+        },
+        {
+          title: '05. Retrieval-Augmented Generation (RAG) & Agent Workflows',
+          description: 'Architect vector embeddings, hybrid BM25 + dense retrieval, and structured tool calling.',
+          estimatedHours: 16,
+          skillName: 'RAG',
+          resources: ['LlamaIndex / LangChain Production RAG Guide', 'Google GenAI SDK Docs'],
+          projects: ['Citation-Grounded Technical Documentation Assistant'],
+          problems: ['Semantic Chunking & Reranking Pipeline', 'Hallucination Evaluation Harness'],
+        },
+        {
+          title: '06. Production Model Serving, Quantization & Evaluation',
+          description: 'Deploy low-latency LLM/ML APIs with Docker, batching, caching, and automated telemetry.',
+          estimatedHours: 18,
+          skillName: 'Generative AI',
+          resources: ['vLLM & TensorRT-LLM Documentation', 'Full Stack Deep Learning'],
+          projects: ['Production AI Microservice with Latency & Eval Benchmarks'],
+          problems: ['Dynamic Request Batching Queue', 'Token Streaming SSE Endpoint'],
+        },
+      ],
+    };
+  }
+
   return {
-    title: `Pathway: ${cleanTopic.charAt(0).toUpperCase() + cleanTopic.slice(1)}`,
+    title: `Pathway: ${formattedTopic}`,
     category: 'Custom AI Roadmap',
-    description: `Structured execution roadmap tailored for "${goalPrompt}" with hands-on milestones, problem sets, and production deployment checkpoints.`,
+    description: `Structured execution roadmap tailored for "${cleanGoal}" with hands-on milestones, problem sets, and production deployment checkpoints.`,
     estimatedWeeks: 10,
     difficulty: 'Intermediate',
     steps: [
       {
-        title: '01. Language & Runtime Foundations',
-        description: 'Master core syntax, memory management, asynchronous concurrency, and type systems.',
+        title: `01. Core Foundations & Tooling for ${formattedTopic}`,
+        description: `Master language fundamentals, memory model, asynchronous execution, and type safety for ${formattedTopic}.`,
         estimatedHours: 14,
-        skillName: 'TypeScript',
-        resources: ['Official Language Handbook', 'Systems Design Primer'],
-        projects: ['CLI Task Runner with Concurrent Worker Pool'],
+        skillName: studentSkills[0] || 'TypeScript',
+        resources: ['Official Language & Architecture Handbook', 'Systems Design Primer'],
+        projects: [`Core CLI & Modular Engine for ${formattedTopic}`],
         problems: ['LRU Cache Implementation', 'Rate Limiter Token Bucket'],
       },
       {
-        title: '02. Relational Data Modeling & Indexing',
-        description: 'Design normalized schemas, B-Tree indexes, transactions, and query execution plans in PostgreSQL.',
+        title: '02. Data Modeling, Persistence & Query Optimization',
+        description: 'Design normalized schemas, B-Tree indexes, transactions, and high-throughput data access layers.',
         estimatedHours: 16,
         skillName: 'PostgreSQL',
         resources: ['PostgreSQL Documentation', 'Use The Index, Luke'],
         projects: ['Multi-tenant Schema with ACID Transaction Audit Log'],
-        problems: ['Nth Highest Salary Query', 'Composite Index Optimization'],
+        problems: ['Composite Index Optimization', 'Window Function Analytics Query'],
       },
       {
-        title: '03. REST & Real-time API Architecture',
-        description: 'Build resilient APIs with input validation, pagination, idempotency keys, and authentication.',
+        title: '03. API Architecture, Security & Real-Time Protocols',
+        description: 'Build resilient services with input validation, pagination, idempotency keys, and authentication.',
         estimatedHours: 18,
         skillName: 'Node.js',
         resources: ['REST API Design Rulebook', 'OWASP API Security Top 10'],
-        projects: ['Authenticated Opportunity Ingestion REST Service'],
-        problems: ['Cursor Pagination Engine', 'JWT & Session Middleware'],
+        projects: [`Authenticated Service & Dashboard for ${formattedTopic}`],
+        problems: ['Cursor Pagination Engine', 'JWT & RBAC Session Middleware'],
       },
       {
-        title: '04. Caching, Queues & Distributed State',
-        description: 'Implement Redis caching strategies, background job workers, and retry dead-letter queues.',
+        title: '04. Caching, Concurrency & Distributed State',
+        description: 'Implement caching strategies, background job workers, and retry dead-letter queues.',
         estimatedHours: 15,
         skillName: 'Redis',
-        resources: ['Redis University', 'Designing Data-Intensive Applications'],
-        projects: ['Distributed Notification Dispatcher'],
+        resources: ['Designing Data-Intensive Applications', 'Redis University'],
+        projects: ['Distributed Event & Notification Dispatcher'],
         problems: ['Cache Stampede Prevention', 'Pub/Sub Event Aggregator'],
       },
       {
-        title: '05. Containerization & CI/CD Pipelines',
-        description: 'Package services with multi-stage Dockerfiles, automated test suites, and GitHub Actions.',
+        title: '05. Containerization, Testing & CI/CD Automation',
+        description: 'Package services with multi-stage Dockerfiles, automated integration tests, and GitHub Actions.',
         estimatedHours: 12,
         skillName: 'Docker',
         resources: ['Docker Curriculum', 'GitHub Actions Docs'],
@@ -303,12 +382,12 @@ export async function generateCustomRoadmap(goalPrompt: string) {
         problems: ['Multi-Stage Build Optimization', 'Healthcheck Probe Config'],
       },
       {
-        title: '06. Capstone Production System & Open Source PR',
-        description: 'Deploy a full-stack benchmarked service and submit a verified pull request to an open-source repo.',
+        title: `06. Capstone Production Launch: ${formattedTopic}`,
+        description: 'Deploy a full-stack benchmarked project and submit a verified pull request to an open-source repository.',
         estimatedHours: 20,
         skillName: 'System Design',
         resources: ['Cloud Native Computing Foundation', 'GSoC Organization Guide'],
-        projects: ['Production Telemetry & Career Intelligence Engine'],
+        projects: [`Production-Grade ${formattedTopic} Capstone & Open Source PR`],
         problems: ['End-to-End Load Testing', 'Open Source Issue Triage'],
       },
     ],
